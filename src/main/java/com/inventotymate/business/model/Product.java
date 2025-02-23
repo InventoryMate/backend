@@ -24,6 +24,7 @@ public class Product {
     @Column(name = "product_price", nullable = false)
     private double productPrice;
 
+    // Maybe a relation to a Category entity (Many to One) or maybe we won't use Categories in the future
     @Column(name = "category_id", nullable = false)
     private Long categoryId;
 }

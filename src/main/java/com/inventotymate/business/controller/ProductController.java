@@ -42,7 +42,7 @@ public class ProductController {
     // Description: Get product by id
     @Transactional(readOnly = true)
     @GetMapping("/product/{productId}")
-    public ResponseEntity<Product> getProductById(Long productId) {
+    public ResponseEntity<Product> getProductById(@PathVariable(name = "productId") Long productId) {
         if(productRepository.existsById(productId)) {
             return new ResponseEntity<>(productService.getProductById(productId), HttpStatus.OK);
         }

@@ -1,5 +1,6 @@
 package com.inventotymate.business.controller;
 
+import com.inventotymate.business.Dto.OrderRequest;
 import com.inventotymate.business.model.Order;
 import com.inventotymate.business.repository.OrderDetailRepository;
 import com.inventotymate.business.repository.OrderRepository;
@@ -30,7 +31,7 @@ public class OrderController {
         this.orderDetailRepository = orderDetailRepository;
     }
 
-    // URL: http://localhost:8080/api/InventoryMate/v1/orders
+    // URL: http://localhost:8081/api/InventoryMate/v1/orders
     // Method: GET
     // Description: Get all orders
     @Transactional(readOnly = true)
@@ -43,7 +44,7 @@ public class OrderController {
         return new ResponseEntity<>(orders, HttpStatus.OK);
     }
 
-    // URL: http://localhost:8080/api/InventoryMate/v1/order/{orderId}
+    // URL: http://localhost:8081/api/InventoryMate/v1/order/{orderId}
     // Method: GET
     // Description: Get order by id
     @Transactional(readOnly = true)
@@ -55,21 +56,19 @@ public class OrderController {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    // URL: http://localhost:8080/api/InventoryMate/v1/order/{orderId}
+
+
+    // URL: http://localhost:8081/api/InventoryMate/v1/orders
     // Method: POST
     // Description: Save order
     @Transactional
-    @PostMapping("/order")
-    public ResponseEntity<Order> saveOrder(@RequestBody Order newOrder) {
-        Order order = new Order();
-        order.setOrderDate(newOrder.getOrderDate());
-        order.setTotalPrice(newOrder.getTotalPrice());
-        order.setOrderDetails(newOrder.getOrderDetails());
-        Order savedOrder = orderService.saveOrder(order);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedOrder);
+    @PostMapping("/orders")
+    public ResponseEntity<Order>createOrder(@RequestBody OrderRequest orderRequest) {
+        Order sabedOrder = orderService.createOrder(orderRequest);
+        return new ResponseEntity<>(sabedOrder, HttpStatus.CREATED);
     }
 
-    // URL: http://localhost:8080/api/InventoryMate/v1/order/{orderId}
+    // URL: http://localhost:8081/api/InventoryMate/v1/order/{orderId}
     // Method: PUT
     // Description: Update order
     @Transactional
@@ -81,7 +80,7 @@ public class OrderController {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    // URL: http://localhost:8080/api/InventoryMate/v1/order/{orderId}
+    // URL: http://localhost:8081/api/InventoryMate/v1/order/{orderId}
     // Method: DELETE
     // Description: Delete order
     @Transactional

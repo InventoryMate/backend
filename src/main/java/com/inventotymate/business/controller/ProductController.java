@@ -24,7 +24,7 @@ public class ProductController {
         this.productRepository = productRepository;
     }
 
-    // URL: http://localhost:8080/api/InventoryMate/v1/products
+    // URL: http://localhost:8081/api/InventoryMate/v1/products
     // Method: GET
     // Description: Get all products
     @Transactional(readOnly = true)
@@ -37,7 +37,7 @@ public class ProductController {
         return new ResponseEntity<>(products, HttpStatus.OK);
     }
 
-    // URL: http://localhost:8080/api/InventoryMate/v1/product/{productId}
+    // URL: http://localhost:8081/api/InventoryMate/v1/product/{productId}
     // Method: GET
     // Description: Get product by id
     @Transactional(readOnly = true)
@@ -49,7 +49,7 @@ public class ProductController {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    // URL: http://localhost:8080/api/InventoryMate/v1/product/{productId}
+    // URL: http://localhost:8081/api/InventoryMate/v1/product
     // Method: POST
     // Description: Save product
     @Transactional
@@ -64,19 +64,20 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.CREATED).body(savedProduct);
     }
 
-    // URL: http://localhost:8080/api/InventoryMate/v1/product/{productId}
+    // URL: http://localhost:8081/api/InventoryMate/v1/product/{productId}
     // Method: PUT
     // Description: Update product
     @Transactional
     @PutMapping("/product/{productId}")
-    public ResponseEntity<Product> updateProduct(@PathVariable Long productId, @RequestBody Product updatedProduct) {
+    public ResponseEntity<Product> updateProduct(@PathVariable(name = "productId") Long productId, @RequestBody Product updatedProduct) {
         if(productRepository.existsById(productId)) {
+            updatedProduct.setId(productId);
             return new ResponseEntity<>(productService.updateProduct(updatedProduct), HttpStatus.OK);
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    // URL: http://localhost:8080/api/InventoryMate/v1/product/{productId}
+    // URL: http://localhost:8081/api/InventoryMate/v1/product/{productId}
     // Method: DELETE
     // Description: Delete product
     @Transactional

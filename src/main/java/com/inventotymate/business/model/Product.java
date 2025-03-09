@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -24,7 +26,17 @@ public class Product {
     @Column(name = "product_price", nullable = false)
     private double productPrice;
 
-    // Maybe a relation to a Category entity (Many to One) or maybe we won't use Categories in the future
     @Column(name = "category_id", nullable = false)
     private Long categoryId;
+
+    @Column(name = "has_expiration", nullable = false)
+    private boolean hasExpiration;
+
+    @Temporal(TemporalType.DATE)
+    @Column(name = "expiration_date")
+    private Date expirationDate;
+
+    public boolean isExpired() {
+        return hasExpiration && expirationDate != null && expirationDate.before(new Date());
+    }
 }

@@ -5,6 +5,7 @@ import com.inventotymate.business.repository.ProductRepository;
 import com.inventotymate.business.service.ProductService;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 
 @Service
@@ -39,6 +40,11 @@ public class ProductServiceImpl implements ProductService {
             productToUpdate.setProductDescription(product.getProductDescription());
             productToUpdate.setProductPrice(product.getProductPrice());
             productToUpdate.setCategoryId(product.getCategoryId());
+            productToUpdate.setHasExpiration(product.isHasExpiration());
+            if(product.isHasExpiration()) {
+                productToUpdate.setExpirationDate(product.getExpirationDate());
+            }
+
             return productRepository.save(productToUpdate);
         }
         else {
@@ -51,5 +57,37 @@ public class ProductServiceImpl implements ProductService {
         if (productRepository.existsById(productId)) {
             productRepository.deleteById(productId);
         }
+    }
+
+    @Override
+    public List<Product> getProductsByCategory(Long categoryId) {
+        return productRepository.findByCategoryId(categoryId);
+    }
+
+    @Override
+    public boolean existsByProductName(String productName) {
+        return productRepository.existsByProductNameIgnoreCase(productName);
+    }
+
+    @Override
+    public boolean isProductExpired(Long productId) {
+        Product product = productRepository.findById(productId).orElse(null);
+        return product != null && product.isExpired();
+    }
+
+    @Override
+    public List<Product> getExpiredProducts() {
+        Date today = new Date();
+        return productRepository.findByHasExpirationTrueAndExpirationDateBefore(today);
+    }
+
+    @Override
+    public Product updateExpirationDate(Long productId, Date newExpirationDate) {
+        Product product = productRepository.findById(productId).orElse(null);
+        if (product != null && product.isHasExpiration()) {
+            product.setExpirationDate(newExpirationDate);
+            return productRepository.save(product);
+        }
+        return null;
     }
 }

@@ -5,11 +5,13 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Date;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "product")
+@Table(name = "products")
 public class Product {
     @Id
     @GeneratedValue (strategy = GenerationType.IDENTITY)
@@ -26,4 +28,15 @@ public class Product {
 
     @Column(name = "category_id", nullable = false)
     private Long categoryId;
+
+    @Column(name = "has_expiration", nullable = false)
+    private boolean hasExpiration;
+
+    @Temporal(TemporalType.DATE)
+    @Column(name = "expiration_date")
+    private Date expirationDate;
+
+    public boolean isExpired() {
+        return hasExpiration && expirationDate != null && expirationDate.before(new Date());
+    }
 }

@@ -26,8 +26,9 @@ public class Product {
     @Column(name = "product_price", nullable = false)
     private double productPrice;
 
-    @Column(name = "category_id", nullable = false)
-    private Long categoryId;
+    @ManyToOne
+    @JoinColumn(name = "category_id", referencedColumnName = "id", nullable = false)
+    private Category category;
 
     @Column(name = "has_expiration", nullable = false)
     private boolean hasExpiration;

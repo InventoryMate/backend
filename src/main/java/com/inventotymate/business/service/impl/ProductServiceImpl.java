@@ -1,6 +1,7 @@
 package com.inventotymate.business.service.impl;
 
 import com.inventotymate.business.model.Product;
+import com.inventotymate.business.repository.CategoryRepository;
 import com.inventotymate.business.repository.ProductRepository;
 import com.inventotymate.business.service.ProductService;
 import org.springframework.stereotype.Service;
@@ -12,9 +13,11 @@ import java.util.List;
 public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
 
-    public ProductServiceImpl(ProductRepository productRepository) {
+    public ProductServiceImpl(ProductRepository productRepository, CategoryRepository categoryRepository) {
         this.productRepository = productRepository;
+        this.categoryRepository = categoryRepository;
     }
 
     @Override
@@ -29,7 +32,10 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Product saveProduct(Product product) {
-        return productRepository.save(product);
+        if (categoryRepository.existsById(product.getCategory().getId()) || product.getCategory().getId() == 0) {
+            return productRepository.save(product);
+        }
+        throw new IllegalArgumentException("Invalid category ID: " + product.getCategory().getId());
     }
 
     @Override
@@ -39,7 +45,7 @@ public class ProductServiceImpl implements ProductService {
             productToUpdate.setProductName(product.getProductName());
             productToUpdate.setProductDescription(product.getProductDescription());
             productToUpdate.setProductPrice(product.getProductPrice());
-            productToUpdate.setCategoryId(product.getCategoryId());
+            productToUpdate.setCategory(product.getCategory());
             productToUpdate.setHasExpiration(product.isHasExpiration());
             if(product.isHasExpiration()) {
                 productToUpdate.setExpirationDate(product.getExpirationDate());

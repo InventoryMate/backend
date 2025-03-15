@@ -12,6 +12,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Controller
@@ -64,17 +65,20 @@ public class OrderController {
     @Transactional
     @PostMapping("/orders")
     public ResponseEntity<Order>createOrder(@RequestBody OrderRequest orderRequest) {
-        Order sabedOrder = orderService.createOrder(orderRequest);
-        return new ResponseEntity<>(sabedOrder, HttpStatus.CREATED);
+        Order savedOrder = orderService.createOrder(orderRequest);
+        return new ResponseEntity<>(savedOrder, HttpStatus.CREATED);
     }
 
+    // En casos normales no se utiliza este método, y falta arreglarse.
     // URL: http://localhost:8081/api/InventoryMate/v1/order/{orderId}
     // Method: PUT
     // Description: Update order
     @Transactional
     @PutMapping("/order/{orderId}")
-    public ResponseEntity<Order> updateOrder(@PathVariable Long orderId, @RequestBody Order updatedOrder) {
+    public ResponseEntity<Order> updateOrder(@PathVariable(name = "orderId") Long orderId, @RequestBody Order updatedOrder) {
         if(orderRepository.existsById(orderId)) {
+            updatedOrder.setId(orderId);
+            updatedOrder.setOrderDate(LocalDateTime.now());
             return new ResponseEntity<>(orderService.updateOrder(updatedOrder), HttpStatus.OK);
         }
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);

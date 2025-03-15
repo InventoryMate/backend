@@ -5,27 +5,32 @@ import com.inventotymate.business.Dto.OrderRequest;
 import com.inventotymate.business.model.Order;
 import com.inventotymate.business.model.OrderDetail;
 import com.inventotymate.business.model.Product;
+import com.inventotymate.business.repository.CategoryRepository;
 import com.inventotymate.business.repository.OrderDetailRepository;
 import com.inventotymate.business.repository.OrderRepository;
 import com.inventotymate.business.repository.ProductRepository;
 import com.inventotymate.business.service.OrderService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderServiceImpl implements OrderService {
-    @Autowired
+
     private OrderRepository orderRepository;
-    @Autowired
     private OrderDetailRepository orderDetailRepository;
-    @Autowired
     private ProductRepository productRepository;
+
+    public OrderServiceImpl(OrderRepository orderRepository, OrderDetailRepository orderDetailRepository, ProductRepository productRepository) {
+        this.orderRepository = orderRepository;
+        this.orderDetailRepository = orderDetailRepository;
+        this.productRepository = productRepository;
+    }
 
 
     @Transactional
@@ -75,17 +80,40 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.save(order);
     }
 
+    // Normalmente no se utiliza este método, y falta arreglarse.
+    @Transactional
     @Override
     public Order updateOrder(Order order) {
-        Order orderToUpdate = orderRepository.findById(order.getId()).orElse(null);
-        if (orderToUpdate != null) {
-            orderToUpdate.setOrderDate(order.getOrderDate());
-            orderToUpdate.setTotalPrice(order.getTotalPrice());
-            return orderRepository.save(orderToUpdate);
+        Order orderToUpdate = orderRepository.findById(order.getId()).orElseThrow(() ->
+                new RuntimeException("Orden no encontrada"));
+        orderToUpdate.setOrderDate(order.getOrderDate());
+        double newTotalPrice = 0.0;
+        List<OrderDetail> existingDetails = orderToUpdate.getOrderDetails();
+        Map<Long, OrderDetail> existingDetailsMap = existingDetails.stream()
+                .collect(Collectors.toMap(detail -> detail.getProduct().getId(), detail -> detail));
+        List<OrderDetail> updatedDetails = new ArrayList<>();
+        for (OrderDetail orderDetail : order.getOrderDetails()) {
+            Product product = productRepository.findById(orderDetail.getProduct().getId())
+                    .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+            OrderDetail detailToUpdate = existingDetailsMap.get(product.getId());
+            if (detailToUpdate != null) {
+                detailToUpdate.setQuantity(orderDetail.getQuantity());
+                detailToUpdate.setSubtotalPrice(product.getProductPrice() * orderDetail.getQuantity());
+            } else {
+                detailToUpdate = new OrderDetail();
+                detailToUpdate.setOrder(orderToUpdate);
+                detailToUpdate.setProduct(product);
+                detailToUpdate.setQuantity(orderDetail.getQuantity());
+                detailToUpdate.setSubtotalPrice(product.getProductPrice() * orderDetail.getQuantity());
+            }
+            newTotalPrice += detailToUpdate.getSubtotalPrice();
+            updatedDetails.add(detailToUpdate);
         }
-        else {
-            return null;
-        }
+        existingDetails.removeIf(detail ->
+                updatedDetails.stream().noneMatch(updated -> updated.getProduct().getId().equals(detail.getProduct().getId())));
+        orderToUpdate.setOrderDetails(updatedDetails);
+        orderToUpdate.setTotalPrice(newTotalPrice);
+        return orderRepository.save(orderToUpdate);
     }
 
     @Override

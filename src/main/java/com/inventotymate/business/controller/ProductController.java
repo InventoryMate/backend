@@ -61,7 +61,7 @@ public class ProductController {
         product.setProductName(newProduct.getProductName());
         product.setProductDescription(newProduct.getProductDescription());
         product.setProductPrice(newProduct.getProductPrice());
-        product.setCategoryId(newProduct.getCategoryId());
+        product.setCategory(newProduct.getCategory());
         product.setHasExpiration(newProduct.isHasExpiration());
         if (newProduct.isHasExpiration()){
             product.setExpirationDate(newProduct.getExpirationDate());

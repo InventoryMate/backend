@@ -14,7 +14,7 @@ import java.util.List;
 
 //CHANGE REQUEST MAPPING TO /api/InventoryMate/v1/categories
 @Controller
-@RequestMapping("/api/InventoryMate/v1")
+@RequestMapping("/api/InventoryMate/v1/categories")
 public class CategoryController {
 
     private final CategoryService categoryService;
@@ -30,7 +30,7 @@ public class CategoryController {
     // Method: GET
     // Description: Get all categories
     @Transactional(readOnly = true)
-    @GetMapping("/categories")
+    @GetMapping
     public ResponseEntity<List<Category>> getAllCategories() {
         List<Category> categories = categoryService.getAllCategories();
         if(categories.isEmpty()) {
@@ -43,7 +43,7 @@ public class CategoryController {
     // Method: GET
     // Description: Get category by id
     @Transactional(readOnly = true)
-    @GetMapping("/category/{categoryId}")
+    @GetMapping("/{categoryId}")
     public ResponseEntity<Category> getCategoryById(@PathVariable(name = "categoryId") Long categoryId) {
         if(categoryRepository.existsById(categoryId)) {
             return new ResponseEntity<>(categoryService.getCategoryById(categoryId), HttpStatus.OK);
@@ -55,7 +55,7 @@ public class CategoryController {
     // Method: POST
     // Description: Save category
     @Transactional
-    @PostMapping("/categories")
+    @PostMapping
     public ResponseEntity<Category>createCategory(@RequestBody Category category) {
         Category savedCategory = categoryService.saveCategory(category);
         return new ResponseEntity<>(savedCategory, HttpStatus.CREATED);
@@ -65,7 +65,7 @@ public class CategoryController {
     // Method: PUT
     // Description: Update category
     @Transactional
-    @PutMapping("/category/{categoryId}")
+    @PutMapping("/{categoryId}")
     public ResponseEntity<Category> updateCategory(@PathVariable(name = "categoryId") Long categoryId, @RequestBody Category updatedCategory) {
         if(categoryRepository.existsById(categoryId)) {
             updatedCategory.setId(categoryId);
@@ -78,7 +78,7 @@ public class CategoryController {
     // Method: DELETE
     // Description: Delete category
     @Transactional
-    @DeleteMapping("/category/{categoryId}")
+    @DeleteMapping("/{categoryId}")
     public ResponseEntity<String> deleteCategory(@PathVariable Long categoryId) {
         if(categoryRepository.existsById(categoryId)) {
             categoryService.deleteCategory(categoryId);

@@ -14,7 +14,7 @@ import java.util.List;
 
 //CHANGE REQUEST MAPPING TO /api/InventoryMate/v1
 @RestController
-@RequestMapping("/api/InventoryMate/v1")
+@RequestMapping("/api/InventoryMate/v1/products")
 public class ProductController {
 
     private final ProductService productService;
@@ -30,7 +30,7 @@ public class ProductController {
     // Method: GET
     // Description: Get all products
     @Transactional(readOnly = true)
-    @GetMapping("/products")
+    @GetMapping
     public ResponseEntity<List<Product>> getAllProducts() {
         List<Product> products = productService.getAllProducts();
         if(products.isEmpty()) {
@@ -43,7 +43,7 @@ public class ProductController {
     // Method: GET
     // Description: Get product by id
     @Transactional(readOnly = true)
-    @GetMapping("/product/{productId}")
+    @GetMapping("/{productId}")
     public ResponseEntity<Product> getProductById(@PathVariable(name = "productId") Long productId) {
         if(productRepository.existsById(productId)) {
             return new ResponseEntity<>(productService.getProductById(productId), HttpStatus.OK);
@@ -55,7 +55,7 @@ public class ProductController {
     // Method: POST
     // Description: Save product
     @Transactional
-    @PostMapping("/product")
+    @PostMapping
     public ResponseEntity<Product> saveProduct(@RequestBody Product newProduct) {
         Product product = new Product();
         product.setProductName(newProduct.getProductName());
@@ -72,7 +72,7 @@ public class ProductController {
     // Method: PUT
     // Description: Update product
     @Transactional
-    @PutMapping("/product/{productId}")
+    @PutMapping("/{productId}")
     public ResponseEntity<Product> updateProduct(@PathVariable(name = "productId") Long productId, @RequestBody Product updatedProduct) {
         if(productRepository.existsById(productId)) {
             updatedProduct.setId(productId);
@@ -85,7 +85,7 @@ public class ProductController {
     // Method: DELETE
     // Description: Delete product
     @Transactional
-    @DeleteMapping("/product/{productId}")
+    @DeleteMapping("/{productId}")
     public ResponseEntity<String> deleteProduct(@PathVariable(name = "productId") Long productId) {
         if(productRepository.existsById(productId)) {
             productService.deleteProduct(productId);
@@ -97,7 +97,7 @@ public class ProductController {
     // URL: http://localhost:8081/api/InventoryMate/v1/products/category/{categoryId}
     // Method: GET
     // Description: Get products by category
-    @GetMapping("/products/category/{categoryId}")
+    @GetMapping("/category/{categoryId}")
     public List<Product> getProductsByCategory(@PathVariable(name = "categoryId") Long categoryId) {
         return productService.getProductsByCategory(categoryId);
     }
@@ -105,7 +105,7 @@ public class ProductController {
     // URL: http://localhost:8081/api/InventoryMate/v1/products/exists
     // Method: GET
     // Description: Check if product exists
-    @GetMapping("/product/exists")
+    @GetMapping("exists")
     public ResponseEntity<Boolean> checkProductExists(@RequestParam String name) {
         boolean exists = productService.existsByProductName(name);
         return ResponseEntity.ok(exists);

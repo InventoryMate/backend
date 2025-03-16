@@ -17,7 +17,7 @@ import java.util.List;
 
 //CHANGE REQUEST MAPPING TO /api/InventoryMate/v1/orders
 @Controller
-@RequestMapping("/api/InventoryMate/v1")
+@RequestMapping("/api/InventoryMate/v1/orders")
 public class OrderController {
 
     private final OrderService orderService;
@@ -37,7 +37,7 @@ public class OrderController {
     // Method: GET
     // Description: Get all orders
     @Transactional(readOnly = true)
-    @GetMapping("/orders")
+    @GetMapping
     public ResponseEntity<List<Order>> getAllOrders() {
         List<Order> orders = orderService.getAllOrders();
         if(orders.isEmpty()) {
@@ -50,7 +50,7 @@ public class OrderController {
     // Method: GET
     // Description: Get order by id
     @Transactional(readOnly = true)
-    @GetMapping("/order/{orderId}")
+    @GetMapping("/{orderId}")
     public ResponseEntity<Order> getOrderById(@PathVariable(name = "orderId") Long orderId) {
         if(orderRepository.existsById(orderId)) {
             return new ResponseEntity<>(orderService.getOrderById(orderId), HttpStatus.OK);
@@ -62,7 +62,7 @@ public class OrderController {
     // Method: POST
     // Description: Save order
     @Transactional
-    @PostMapping("/orders")
+    @PostMapping
     public ResponseEntity<Order>createOrder(@RequestBody OrderRequest orderRequest) {
         Order savedOrder = orderService.createOrder(orderRequest);
         return new ResponseEntity<>(savedOrder, HttpStatus.CREATED);
@@ -73,7 +73,7 @@ public class OrderController {
     // Method: PUT
     // Description: Update order
     @Transactional
-    @PutMapping("/order/{orderId}")
+    @PutMapping("/{orderId}")
     public ResponseEntity<Order> updateOrder(@PathVariable(name = "orderId") Long orderId, @RequestBody Order updatedOrder) {
         if(orderRepository.existsById(orderId)) {
             updatedOrder.setId(orderId);
@@ -87,7 +87,7 @@ public class OrderController {
     // Method: DELETE
     // Description: Delete order
     @Transactional
-    @DeleteMapping("/order/{orderId}")
+    @DeleteMapping("/{orderId}")
     public ResponseEntity<String> deleteOrder(@PathVariable Long orderId) {
         if(orderRepository.existsById(orderId)) {
             orderService.deleteOrder(orderId);

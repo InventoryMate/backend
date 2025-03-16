@@ -1,8 +1,13 @@
 package com.inventorymate.business.controller;
 
+import com.inventorymate.business.Dto.ProductRequest;
 import com.inventorymate.business.model.Product;
+import com.inventorymate.business.model.Stock;
 import com.inventorymate.business.repository.ProductRepository;
 import com.inventorymate.business.service.ProductService;
+import com.inventorymate.exception.ResourceNotFoundException;
+import com.inventorymate.exception.ValidationException;
+import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,12 +23,10 @@ import java.util.List;
 public class ProductController {
 
     private final ProductService productService;
-    private final ProductRepository productRepository;
 
     @Autowired
-    public ProductController(ProductService productService, ProductRepository productRepository) {
+    public ProductController(ProductService productService) {
         this.productService = productService;
-        this.productRepository = productRepository;
     }
 
     // URL: http://localhost:8081/api/InventoryMate/v1/products
@@ -33,10 +36,7 @@ public class ProductController {
     @GetMapping
     public ResponseEntity<List<Product>> getAllProducts() {
         List<Product> products = productService.getAllProducts();
-        if(products.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        }
-        return new ResponseEntity<>(products, HttpStatus.OK);
+        return products.isEmpty()? ResponseEntity.noContent().build() : ResponseEntity.ok(products);
     }
 
     // URL: http://localhost:8081/api/InventoryMate/v1/product/{productId}
@@ -45,10 +45,8 @@ public class ProductController {
     @Transactional(readOnly = true)
     @GetMapping("/{productId}")
     public ResponseEntity<Product> getProductById(@PathVariable(name = "productId") Long productId) {
-        if(productRepository.existsById(productId)) {
-            return new ResponseEntity<>(productService.getProductById(productId), HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        Product product = productService.getProductById(productId);
+        return ResponseEntity.ok(product);
     }
 
     // URL: http://localhost:8081/api/InventoryMate/v1/product
@@ -56,15 +54,8 @@ public class ProductController {
     // Description: Save product
     @Transactional
     @PostMapping
-    public ResponseEntity<Product> saveProduct(@RequestBody Product newProduct) {
-        Product product = new Product();
-        product.setProductName(newProduct.getProductName());
-        product.setProductDescription(newProduct.getProductDescription());
-        product.setProductPrice(newProduct.getProductPrice());
-        product.setCategory(newProduct.getCategory());
-        product.setExpirable(newProduct.isExpirable());
-
-        Product savedProduct = productService.saveProduct(product);
+    public ResponseEntity<Product> saveProduct(@RequestBody ProductRequest newProduct) {
+        Product savedProduct =productService.saveProduct(newProduct);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedProduct);
     }
 
@@ -73,12 +64,9 @@ public class ProductController {
     // Description: Update product
     @Transactional
     @PutMapping("/{productId}")
-    public ResponseEntity<Product> updateProduct(@PathVariable(name = "productId") Long productId, @RequestBody Product updatedProduct) {
-        if(productRepository.existsById(productId)) {
-            updatedProduct.setId(productId);
-            return new ResponseEntity<>(productService.updateProduct(updatedProduct), HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    public ResponseEntity<Product> updateProduct(@PathVariable(name = "productId") Long productId, @RequestBody ProductRequest productRequest) {
+        Product product = productService.updateProduct(productRequest, productId);
+        return ResponseEntity.ok(product);
     }
 
     // URL: http://localhost:8081/api/InventoryMate/v1/product/{productId}
@@ -87,11 +75,8 @@ public class ProductController {
     @Transactional
     @DeleteMapping("/{productId}")
     public ResponseEntity<String> deleteProduct(@PathVariable(name = "productId") Long productId) {
-        if(productRepository.existsById(productId)) {
-            productService.deleteProduct(productId);
-            return new ResponseEntity<>("Product deleted successfully", HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        productService.deleteProduct(productId);
+        return ResponseEntity.noContent().build();
     }
 
     // URL: http://localhost:8081/api/InventoryMate/v1/products/category/{categoryId}
@@ -111,34 +96,13 @@ public class ProductController {
         return ResponseEntity.ok(exists);
     }
 
-    // URL: http://localhost:8081/api/InventoryMate/v1/product/{id}/is-expired
-    // Method: GET
-    // Description: Check if product is expired
-    /*
-    @GetMapping("/product/{id}/is-expired")
-    public boolean isProductExpired(@PathVariable(name = "id") Long id) {
-        return productService.isProductExpired(id);
+    // Global Exception Handling for Not Found & Validation Exceptions
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<String> handleNotFoundException(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
     }
-     */
-
-    // URL: http://localhost:8081/api/InventoryMate/v1/products/expired
-    // Method: GET
-    // Description: Get expired products
-    /*
-    @GetMapping("/products/expired")
-    public List<Product> getExpiredProducts() {
-        return productService.getExpiredProducts();
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<String> handleValidationException(ValidationException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
-
-    */
-
-    /*
-    @PutMapping("/product/{id}/expiration")
-    public ResponseEntity<Product> updateExpirationDate(
-            @PathVariable(name = "id") Long id,
-            @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") Date newDate) {
-        Product updatedProduct = productService.updateExpirationDate(id, newDate);
-        return updatedProduct != null ? ResponseEntity.ok(updatedProduct) : ResponseEntity.notFound().build();
-    }
-     */
 }

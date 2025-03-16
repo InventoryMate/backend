@@ -9,6 +9,8 @@ import com.inventorymate.business.repository.OrderDetailRepository;
 import com.inventorymate.business.repository.OrderRepository;
 import com.inventorymate.business.repository.ProductRepository;
 import com.inventorymate.business.service.OrderService;
+import com.inventorymate.exception.ResourceNotFoundException;
+import com.inventorymate.exception.ValidationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,20 +37,23 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     @Override
     public Order createOrder(OrderRequest orderRequestDTO) {
-        // Crear y guardar la orden
+        // Validate order request
+        validateOrderRequest(orderRequestDTO);
+
+        // Create and save the order
         Order newOrder = new Order();
         newOrder.setOrderDate(LocalDateTime.now());
 
-        // Inicializar la lista de detalles
+        // Initialize the list of order details
         List<OrderDetail> orderDetails = new ArrayList<>();
         double total = 0.0;
 
         for (OrderDetailRequest orderDetailRequest : orderRequestDTO.getOrderDetails()) {
             Product product = productRepository.findById(orderDetailRequest.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+                    .orElseThrow(() -> new RuntimeException("Product not found"));
 
             OrderDetail orderDetail = new OrderDetail();
-            orderDetail.setOrder(newOrder); // Enlazar con la orden
+            orderDetail.setOrder(newOrder); // Link the order with the detail
             orderDetail.setProduct(product);
             orderDetail.setQuantity(orderDetailRequest.getQuantity());
             orderDetail.setSubtotalPrice(product.getProductPrice() * orderDetailRequest.getQuantity());
@@ -58,9 +63,9 @@ public class OrderServiceImpl implements OrderService {
         }
 
         newOrder.setTotalPrice(total);
-        newOrder.setOrderDetails(orderDetails); // Enlazar los detalles con la orden
+        newOrder.setOrderDetails(orderDetails); // Link the order with the details
 
-        // Guardar la orden y los detalles en cascada
+        // Save the order and the details
         return orderRepository.save(newOrder);
     }
 
@@ -74,51 +79,34 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.findById(orderId).orElse(null);
     }
 
-    @Override
-    public Order saveOrder(Order order) {
-        return orderRepository.save(order);
-    }
-
-    // Normalmente no se utiliza este método, y falta arreglarse.
+    // Normally this method is not used.
     @Transactional
     @Override
-    public Order updateOrder(Order order) {
-        Order orderToUpdate = orderRepository.findById(order.getId()).orElseThrow(() ->
-                new RuntimeException("Orden no encontrada"));
-        orderToUpdate.setOrderDate(order.getOrderDate());
-        double newTotalPrice = 0.0;
-        List<OrderDetail> existingDetails = orderToUpdate.getOrderDetails();
-        Map<Long, OrderDetail> existingDetailsMap = existingDetails.stream()
-                .collect(Collectors.toMap(detail -> detail.getProduct().getId(), detail -> detail));
-        List<OrderDetail> updatedDetails = new ArrayList<>();
-        for (OrderDetail orderDetail : order.getOrderDetails()) {
-            Product product = productRepository.findById(orderDetail.getProduct().getId())
-                    .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
-            OrderDetail detailToUpdate = existingDetailsMap.get(product.getId());
-            if (detailToUpdate != null) {
-                detailToUpdate.setQuantity(orderDetail.getQuantity());
-                detailToUpdate.setSubtotalPrice(product.getProductPrice() * orderDetail.getQuantity());
-            } else {
-                detailToUpdate = new OrderDetail();
-                detailToUpdate.setOrder(orderToUpdate);
-                detailToUpdate.setProduct(product);
-                detailToUpdate.setQuantity(orderDetail.getQuantity());
-                detailToUpdate.setSubtotalPrice(product.getProductPrice() * orderDetail.getQuantity());
-            }
-            newTotalPrice += detailToUpdate.getSubtotalPrice();
-            updatedDetails.add(detailToUpdate);
-        }
-        existingDetails.removeIf(detail ->
-                updatedDetails.stream().noneMatch(updated -> updated.getProduct().getId().equals(detail.getProduct().getId())));
-        orderToUpdate.setOrderDetails(updatedDetails);
-        orderToUpdate.setTotalPrice(newTotalPrice);
-        return orderRepository.save(orderToUpdate);
+    public Order updateOrder(OrderRequest order, Long orderId) {
+        return null;
     }
 
     @Override
     public void deleteOrder(Long orderId) {
-        if (orderRepository.existsById(orderId)) {
-            orderRepository.deleteById(orderId);
+        if (!orderRepository.existsById(orderId)) {
+            throw new ResourceNotFoundException("Order with Id " + orderId + " not found");
+        }
+        orderRepository.deleteById(orderId);
+    }
+
+    private void validateOrderRequest(OrderRequest orderRequest) {
+        if (orderRequest.getOrderDetails() == null || orderRequest.getOrderDetails().isEmpty()) {
+            throw new ValidationException("Order must have at least one product.");
+        }
+
+        for (OrderDetailRequest detail : orderRequest.getOrderDetails()) {
+            if (detail.getProductId() == null) {
+                throw new ValidationException("Each order detail must have a valid product ID.");
+            }
+
+            if (detail.getQuantity() <= 0) {
+                throw new ValidationException("Product quantity must be greater than zero.");
+            }
         }
     }
 }

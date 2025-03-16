@@ -1,12 +1,14 @@
 package com.inventorymate.business.controller;
 
 import com.inventorymate.business.Dto.OrderRequest;
+import com.inventorymate.business.model.Category;
 import com.inventorymate.business.model.Order;
-import com.inventorymate.business.repository.OrderDetailRepository;
-import com.inventorymate.business.repository.OrderRepository;
+
 import com.inventorymate.business.service.OrderService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.inventorymate.exception.ResourceNotFoundException;
+import com.inventorymate.exception.ValidationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,16 +23,10 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
-    private final OrderRepository orderRepository;
-    private final OrderDetailRepository orderDetailRepository;
 
     @Autowired
-    public OrderController(OrderService orderService,
-                           OrderRepository orderRepository,
-                           OrderDetailRepository orderDetailRepository) {
+    public OrderController(OrderService orderService) {
         this.orderService = orderService;
-        this.orderRepository = orderRepository;
-        this.orderDetailRepository = orderDetailRepository;
     }
 
     // URL: http://localhost:8081/api/InventoryMate/v1/orders
@@ -40,10 +36,7 @@ public class OrderController {
     @GetMapping
     public ResponseEntity<List<Order>> getAllOrders() {
         List<Order> orders = orderService.getAllOrders();
-        if(orders.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        }
-        return new ResponseEntity<>(orders, HttpStatus.OK);
+        return orders.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(orders);
     }
 
     // URL: http://localhost:8081/api/InventoryMate/v1/order/{orderId}
@@ -52,10 +45,8 @@ public class OrderController {
     @Transactional(readOnly = true)
     @GetMapping("/{orderId}")
     public ResponseEntity<Order> getOrderById(@PathVariable(name = "orderId") Long orderId) {
-        if(orderRepository.existsById(orderId)) {
-            return new ResponseEntity<>(orderService.getOrderById(orderId), HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        Order order = orderService.getOrderById(orderId);
+        return ResponseEntity.ok(order);
     }
 
     // URL: http://localhost:8081/api/InventoryMate/v1/orders
@@ -65,22 +56,19 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<Order>createOrder(@RequestBody OrderRequest orderRequest) {
         Order savedOrder = orderService.createOrder(orderRequest);
-        return new ResponseEntity<>(savedOrder, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedOrder);
     }
 
-    // En casos normales no se utiliza este método, y falta arreglarse.
+    // Normally we don't update orders
     // URL: http://localhost:8081/api/InventoryMate/v1/order/{orderId}
     // Method: PUT
     // Description: Update order
     @Transactional
     @PutMapping("/{orderId}")
-    public ResponseEntity<Order> updateOrder(@PathVariable(name = "orderId") Long orderId, @RequestBody Order updatedOrder) {
-        if(orderRepository.existsById(orderId)) {
-            updatedOrder.setId(orderId);
-            updatedOrder.setOrderDate(LocalDateTime.now());
-            return new ResponseEntity<>(orderService.updateOrder(updatedOrder), HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    public ResponseEntity<Order> updateOrder(@PathVariable(name = "orderId") Long orderId, @RequestBody OrderRequest updatedOrder) {
+        Order order = orderService.updateOrder(updatedOrder, orderId);
+        return ResponseEntity.ok(order);
+
     }
 
     // URL: http://localhost:8081/api/InventoryMate/v1/order/{orderId}
@@ -89,10 +77,17 @@ public class OrderController {
     @Transactional
     @DeleteMapping("/{orderId}")
     public ResponseEntity<String> deleteOrder(@PathVariable Long orderId) {
-        if(orderRepository.existsById(orderId)) {
-            orderService.deleteOrder(orderId);
-            return new ResponseEntity<>("order deleted successfully", HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        orderService.deleteOrder(orderId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // Global Exception Handling for Not Found & Validation Exceptions
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<String> handleNotFoundException(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    }
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<String> handleValidationException(ValidationException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 }

@@ -1,8 +1,12 @@
 package com.inventorymate.business.controller;
 
+import com.inventorymate.business.Dto.CategoryRequest;
 import com.inventorymate.business.model.Category;
+import com.inventorymate.business.model.Stock;
 import com.inventorymate.business.repository.CategoryRepository;
 import com.inventorymate.business.service.CategoryService;
+import com.inventorymate.exception.ResourceNotFoundException;
+import com.inventorymate.exception.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,12 +22,10 @@ import java.util.List;
 public class CategoryController {
 
     private final CategoryService categoryService;
-    private final CategoryRepository categoryRepository;
 
     @Autowired
-    public CategoryController(CategoryService categoryService, CategoryRepository categoryRepository) {
+    public CategoryController(CategoryService categoryService) {
         this.categoryService = categoryService;
-        this.categoryRepository = categoryRepository;
     }
 
     // URL: http://localhost:8081/api/InventoryMate/v1/categories
@@ -33,10 +35,7 @@ public class CategoryController {
     @GetMapping
     public ResponseEntity<List<Category>> getAllCategories() {
         List<Category> categories = categoryService.getAllCategories();
-        if(categories.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        }
-        return new ResponseEntity<>(categories, HttpStatus.OK);
+        return categories.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(categories);
     }
 
     // URL: http://localhost:8081/api/InventoryMate/v1/category/{categoryId}
@@ -45,10 +44,8 @@ public class CategoryController {
     @Transactional(readOnly = true)
     @GetMapping("/{categoryId}")
     public ResponseEntity<Category> getCategoryById(@PathVariable(name = "categoryId") Long categoryId) {
-        if(categoryRepository.existsById(categoryId)) {
-            return new ResponseEntity<>(categoryService.getCategoryById(categoryId), HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        Category category = categoryService.getCategoryById(categoryId);
+        return ResponseEntity.ok(category);
     }
 
     // URL: http://localhost:8081/api/InventoryMate/v1/categories
@@ -56,9 +53,9 @@ public class CategoryController {
     // Description: Save category
     @Transactional
     @PostMapping
-    public ResponseEntity<Category>createCategory(@RequestBody Category category) {
+    public ResponseEntity<Category>createCategory(@RequestBody CategoryRequest category) {
         Category savedCategory = categoryService.saveCategory(category);
-        return new ResponseEntity<>(savedCategory, HttpStatus.CREATED);
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedCategory);
     }
 
     // URL: http://localhost:8081/api/InventoryMate/v1/category/{categoryId}
@@ -66,12 +63,9 @@ public class CategoryController {
     // Description: Update category
     @Transactional
     @PutMapping("/{categoryId}")
-    public ResponseEntity<Category> updateCategory(@PathVariable(name = "categoryId") Long categoryId, @RequestBody Category updatedCategory) {
-        if(categoryRepository.existsById(categoryId)) {
-            updatedCategory.setId(categoryId);
-            return new ResponseEntity<>(categoryService.updateCategory(updatedCategory), HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    public ResponseEntity<Category> updateCategory(@PathVariable(name = "categoryId") Long categoryId, @RequestBody CategoryRequest updatedCategory) {
+        Category category = categoryService.updateCategory(updatedCategory, categoryId);
+        return ResponseEntity.ok(category);
     }
 
     // URL: http://localhost:8081/api/InventoryMate/v1/category/{categoryId}
@@ -79,11 +73,18 @@ public class CategoryController {
     // Description: Delete category
     @Transactional
     @DeleteMapping("/{categoryId}")
-    public ResponseEntity<String> deleteCategory(@PathVariable Long categoryId) {
-        if(categoryRepository.existsById(categoryId)) {
-            categoryService.deleteCategory(categoryId);
-            return new ResponseEntity<>("category deleted successfully", HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    public ResponseEntity<String> deleteCategory(@PathVariable(name = "categoryId") Long categoryId) {
+        categoryService.deleteCategory(categoryId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // Global Exception Handling for Not Found & Validation Exceptions
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<String> handleNotFoundException(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    }
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<String> handleValidationException(ValidationException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 }

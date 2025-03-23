@@ -25,19 +25,9 @@ public class Product {
     private double productPrice;
 
     @ManyToOne
-    @JoinColumn(name = "category_id", referencedColumnName = "id", nullable = false)
+    @JoinColumn(name = "category_id", referencedColumnName = "id")
     private Category category;
 
     @Column(name = "is_expirable", nullable = false)
     private boolean isExpirable;
-
-    /*
-    @Temporal(TemporalType.DATE)
-    @Column(name = "expiration_date")
-    private Date expirationDate;
-
-    public boolean isExpired() {
-        return hasExpiration && expirationDate != null && expirationDate.before(new Date());
-    }
-    */
 }

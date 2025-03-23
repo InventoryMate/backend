@@ -9,7 +9,6 @@ public interface OrderService {
     Order createOrder(OrderRequest orderRequests);
     public List<Order> getAllOrders();
     public Order getOrderById(Long orderId);
-    public Order saveOrder(Order order);
-    public Order updateOrder(Order order);
+    public Order updateOrder(OrderRequest order, Long orderId);
     public void deleteOrder(Long orderId);
 }

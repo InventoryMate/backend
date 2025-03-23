@@ -31,7 +31,7 @@ public class StockServiceImpl implements StockService {
     @Override
     public Stock getStockById(Long stockId) {
         return stockRepository.findById(stockId)
-                .orElseThrow(() -> new ResourceNotFoundException("Stock with ID " + stockId + " not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Stock with Id " + stockId + " not found"));
     }
 
     @Override
@@ -40,22 +40,22 @@ public class StockServiceImpl implements StockService {
     }
 
     @Override
-    public Stock updateStock(StockRequest updatedStock, Long stockId) {
+    public Stock updateStock(StockRequest stockRequest, Long stockId) {
         Stock stockToUpdate = getStockById(stockId); // Ya maneja ResourceNotFoundException
-        return createOrUpdateStock(updatedStock, stockToUpdate);
+        return createOrUpdateStock(stockRequest, stockToUpdate);
     }
 
     @Override
     public void deleteStock(Long stockId) {
         if (!stockRepository.existsById(stockId)) {
-            throw new ResourceNotFoundException("Stock with ID " + stockId + " not found");
+            throw new ResourceNotFoundException("Stock with Id " + stockId + " not found");
         }
         stockRepository.deleteById(stockId);
     }
 
     private Stock createOrUpdateStock(StockRequest stockRequest, Stock stock) {
         Product product = productRepository.findById(stockRequest.getProductId())
-                .orElseThrow(() -> new ResourceNotFoundException("Producto con ID " + stockRequest.getProductId() + " no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product with Id " + stockRequest.getProductId() + " no encontrado"));
 
         stock.setProduct(product);
         stock.setQuantity(stockRequest.getQuantity());
@@ -70,28 +70,28 @@ public class StockServiceImpl implements StockService {
 
     private void validateStock(Stock stock) {
         if (stock.getQuantity() <= 0) {
-            throw new ValidationException("La cantidad debe ser mayor a 0.");
+            throw new ValidationException("Quantity must be greater than 0.");
         }
 
         if (stock.getUnitType() == null) {
-            throw new ValidationException("El tipo de unidad no puede ser nulo.");
+            throw new ValidationException("Unit type cannot be null.");
         }
 
         if (stock.getProduct() == null) {
-            throw new ValidationException("El producto asociado al stock no puede ser nulo.");
+            throw new ValidationException("The product associated with the stock cannot be null.");
         }
 
         boolean isExpirable = stock.getProduct().isExpirable();
         if (isExpirable && stock.getExpirationDate() == null) {
-            throw new ValidationException("El producto es perecedero y requiere una fecha de expiración.");
+            throw new ValidationException("The product is perishable and requires an expiration date.");
         }
 
         if (isExpirable && stock.getExpirationDate().isBefore(stock.getPurchaseDate())) {
-            throw new ValidationException("La fecha de expiración debe ser posterior a la fecha de compra.");
+            throw new ValidationException("The expiration date must be after the purchase date.");
         }
 
         if (!isExpirable && stock.getExpirationDate() != null) {
-            throw new ValidationException("El producto no es perecedero y no debe tener fecha de expiración.");
+            throw new ValidationException("The product is not perishable and should not have an expiration date.");
         }
     }
 }

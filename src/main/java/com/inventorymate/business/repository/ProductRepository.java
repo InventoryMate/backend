@@ -12,4 +12,5 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     // Maybe a relation to a Category entity (Many to One) or maybe we won't use Categories in the future
     List<Product> findByCategoryId(Long CategoryId);
     boolean existsByProductNameIgnoreCase(String productName);
+    Product findByProductNameIgnoreCase(String productName);
 }

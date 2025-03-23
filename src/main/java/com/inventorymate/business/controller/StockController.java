@@ -3,6 +3,8 @@ package com.inventorymate.business.controller;
 import com.inventorymate.business.Dto.StockRequest;
 import com.inventorymate.business.model.Stock;
 import com.inventorymate.business.service.StockService;
+import com.inventorymate.exception.ResourceNotFoundException;
+import com.inventorymate.exception.ValidationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -68,8 +70,18 @@ public class StockController {
     // Description: Delete Stock
     @Transactional
     @DeleteMapping("/{stockId}")
-    public ResponseEntity<Void> deleteStock(@PathVariable Long stockId) {
+    public ResponseEntity<Void> deleteStock(@PathVariable(name = "stockId") Long stockId) {
         stockService.deleteStock(stockId);
         return ResponseEntity.noContent().build();
+    }
+
+    // Global Exception Handling for Not Found & Validation Exceptions
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<String> handleNotFoundException(ResourceNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+    }
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<String> handleValidationException(ValidationException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 }

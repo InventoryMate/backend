@@ -1,12 +1,13 @@
 package com.inventorymate.business.service.impl;
 
+import com.inventorymate.business.Dto.ProductRequest;
 import com.inventorymate.business.model.Product;
 import com.inventorymate.business.repository.CategoryRepository;
 import com.inventorymate.business.repository.ProductRepository;
 import com.inventorymate.business.service.ProductService;
+import com.inventorymate.exception.ValidationException;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
 import java.util.List;
 
 @Service
@@ -31,32 +32,14 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Product saveProduct(Product product) {
-        if (categoryRepository.existsById(product.getCategory().getId()) || product.getCategory().getId() == 0) {
-            return productRepository.save(product);
-        }
-        throw new IllegalArgumentException("Invalid category ID: " + product.getCategory().getId());
+    public Product saveProduct(ProductRequest product) {
+        return createOrUpdateProduct(product, new Product(), null);
     }
 
-    // Agregar métodos el aspecto de STOCK
     @Override
-    public Product updateProduct(Product product) {
-        Product productToUpdate = productRepository.findById(product.getId()).orElse(null);
-        if (productToUpdate != null) {
-            productToUpdate.setProductName(product.getProductName());
-            productToUpdate.setProductDescription(product.getProductDescription());
-            productToUpdate.setProductPrice(product.getProductPrice());
-            productToUpdate.setCategory(product.getCategory());
-            productToUpdate.setExpirable(product.isExpirable());
-            /*if(product.isHasExpiration()) {
-                productToUpdate.setExpirationDate(product.getExpirationDate());
-            }*/
-
-            return productRepository.save(productToUpdate);
-        }
-        else {
-            return null;
-        }
+    public Product updateProduct(ProductRequest productRequest, Long productId) {
+        Product productToUpdate = getProductById(productId); // Ya maneja ResourceNotFoundException
+        return createOrUpdateProduct(productRequest, productToUpdate, productId);
     }
 
     @Override
@@ -64,6 +47,24 @@ public class ProductServiceImpl implements ProductService {
         if (productRepository.existsById(productId)) {
             productRepository.deleteById(productId);
         }
+    }
+
+    private Product createOrUpdateProduct(ProductRequest productRequest, Product product, Long productId) {
+        if (productRequest.getCategoryId() == 0) {
+            product.setCategory(null);
+        } else {
+            product.setCategory(categoryRepository.findById(productRequest.getCategoryId()).orElseThrow(
+                    () -> new ValidationException("Product category does not exist.")
+            ));
+        }
+        product.setProductName(productRequest.getProductName());
+        product.setProductDescription(productRequest.getProductDescription());
+        product.setProductPrice(productRequest.getProductPrice());
+        product.setExpirable(productRequest.isExpirable());
+
+        validateProduct(product, productId);
+
+        return productRepository.save(product);
     }
 
     @Override
@@ -76,32 +77,36 @@ public class ProductServiceImpl implements ProductService {
         return productRepository.existsByProductNameIgnoreCase(productName);
     }
 
-    // Agregar métodos el aspecto de STOCK
-    /*
-    @Override
-    public boolean isProductExpired(Long productId) {
-        Product product = productRepository.findById(productId).orElse(null);
-        return product != null && product.isExpired();
-    }
-
-
-    @Override
-    public List<Product> getExpiredProducts() {
-        Date today = new Date();
-        return productRepository.findByHasExpirationTrueAndExpirationDateBefore(today);
-    }
-
-
-    // Agregar métodos el aspecto de STOCK
-
-    @Override
-    public Product updateExpirationDate(Long productId, Date newExpirationDate) {
-        Product product = productRepository.findById(productId).orElse(null);
-        if (product != null && product.isHasExpiration()) {
-            product.setExpirationDate(newExpirationDate);
-            return productRepository.save(product);
+    private void validateProduct(Product product, Long productId) {
+        if (product.getProductName() == null || product.getProductName().trim().isEmpty()) {
+            throw new ValidationException("Product name is required.");
         }
-        return null;
+
+        if (product.getProductName().length() < 3 || product.getProductName().length() > 50) {
+            throw new ValidationException("Product name must be between 3 and 50 characters long.");
+        }
+
+        if (!product.getProductName().matches("^[a-zA-Z0-9áéíóúÁÉÍÓÚüÜñÑ ]+$")) {
+            throw new ValidationException("Product name can only contain letters, numbers, and spaces.");
+        }
+
+        // Validate product name uniqueness
+        Product existingProduct = productRepository.findByProductNameIgnoreCase(product.getProductName());
+        if (existingProduct != null && (productId == null || !existingProduct.getId().equals(productId))) {
+            throw new ValidationException("Product name already exists.");
+        }
+
+        if (product.getProductDescription() != null && product.getProductDescription().length() > 100) {
+            throw new ValidationException("Product description must not exceed 100 characters.");
+        }
+
+        if (product.getProductPrice() <= 0) {
+            throw new ValidationException("Product price must be greater than zero.");
+        }
+
+        // Validate category
+        if (product.getCategory() != null && !categoryRepository.existsById(product.getCategory().getId())) {
+            throw new ValidationException("Product category does not exist.");
+        }
     }
-    */
 }

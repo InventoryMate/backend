@@ -30,4 +30,8 @@ public class Product {
 
     @Column(name = "is_expirable", nullable = false)
     private boolean isExpirable;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "unit_type", nullable = false, length = 20)
+    private UnitType unitType; // kg, unidad, litro, etc.
 }

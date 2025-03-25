@@ -5,9 +5,10 @@ import com.inventorymate.business.Dto.OrderRequest;
 import com.inventorymate.business.model.Order;
 import com.inventorymate.business.model.OrderDetail;
 import com.inventorymate.business.model.Product;
-import com.inventorymate.business.repository.OrderDetailRepository;
+import com.inventorymate.business.model.Stock;
 import com.inventorymate.business.repository.OrderRepository;
 import com.inventorymate.business.repository.ProductRepository;
+import com.inventorymate.business.repository.StockRepository;
 import com.inventorymate.business.service.OrderService;
 import com.inventorymate.exception.ResourceNotFoundException;
 import com.inventorymate.exception.ValidationException;
@@ -16,20 +17,20 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class OrderServiceImpl implements OrderService {
 
     private OrderRepository orderRepository;
-    private OrderDetailRepository orderDetailRepository;
+    private StockRepository stockRepository;
     private ProductRepository productRepository;
 
-    public OrderServiceImpl(OrderRepository orderRepository, OrderDetailRepository orderDetailRepository, ProductRepository productRepository) {
+    public OrderServiceImpl(OrderRepository orderRepository, StockRepository stockRepository, ProductRepository productRepository) {
         this.orderRepository = orderRepository;
-        this.orderDetailRepository = orderDetailRepository;
+        this.stockRepository = stockRepository;
         this.productRepository = productRepository;
     }
 
@@ -37,37 +38,79 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     @Override
     public Order createOrder(OrderRequest orderRequestDTO) {
-        // Validate order request
+        // Validate the order request
         validateOrderRequest(orderRequestDTO);
 
-        // Create and save the order
+        // Create a new order
         Order newOrder = new Order();
         newOrder.setOrderDate(LocalDateTime.now());
 
-        // Initialize the list of order details
         List<OrderDetail> orderDetails = new ArrayList<>();
+        List<String> insufficientStockProducts = new ArrayList<>();
         double total = 0.0;
 
         for (OrderDetailRequest orderDetailRequest : orderRequestDTO.getOrderDetails()) {
             Product product = productRepository.findById(orderDetailRequest.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Product not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
-            OrderDetail orderDetail = new OrderDetail();
-            orderDetail.setOrder(newOrder); // Link the order with the detail
-            orderDetail.setProduct(product);
-            orderDetail.setQuantity(orderDetailRequest.getQuantity());
-            orderDetail.setSubtotalPrice(product.getProductPrice() * orderDetailRequest.getQuantity());
+            // Get available stock sorted by purchase date (FIFO strategy)
+            List<Stock> stocks = stockRepository.findByProductIdOrderByPurchaseDateAsc(product.getId())
+                    .stream()
+                    .filter(stock -> !stock.isExpired()) // Ignore expired stock
+                    .toList();
 
-            total += orderDetail.getSubtotalPrice();
-            orderDetails.add(orderDetail);
+            int remainingQuantity = orderDetailRequest.getQuantity();
+            Iterator<Stock> stockIterator = stocks.iterator();
+
+            while (remainingQuantity > 0 && stockIterator.hasNext()) {
+                Stock stock = stockIterator.next();
+
+                if (stock.getQuantity() >= remainingQuantity) {
+                    stock.consumeStock(remainingQuantity);
+                    remainingQuantity = 0;
+                } else {
+                    remainingQuantity -= stock.getQuantity();
+                    stock.consumeStock(stock.getQuantity());
+                }
+
+                // If stock reaches 0, delete it
+                if (stock.getQuantity() == 0) {
+                    stockRepository.delete(stock);
+                } else {
+                    stockRepository.save(stock); // Save updated stock
+                }
+            }
+
+            // If there is not enough stock, add the product to the insufficient stock list
+            if (remainingQuantity > 0) {
+                insufficientStockProducts.add(product.getProductName());
+            } else {
+                // Add order detail only if enough stock is available
+                OrderDetail orderDetail = new OrderDetail();
+                orderDetail.setOrder(newOrder);
+                orderDetail.setProduct(product);
+                orderDetail.setQuantity(orderDetailRequest.getQuantity());
+                orderDetail.setSubtotalPrice(product.getProductPrice() * orderDetailRequest.getQuantity());
+
+                total += orderDetail.getSubtotalPrice();
+                orderDetails.add(orderDetail);
+            }
         }
 
-        newOrder.setTotalPrice(total);
-        newOrder.setOrderDetails(orderDetails); // Link the order with the details
+        // If any product has insufficient stock, throw an exception listing all affected products
+        if (!insufficientStockProducts.isEmpty()) {
+            throw new ValidationException("Not enough stock for the following products: " + String.join(", ", insufficientStockProducts));
+        }
 
-        // Save the order and the details
+        // Save the order
+        newOrder.setTotalPrice(total);
+        newOrder.setOrderDetails(orderDetails);
+
         return orderRepository.save(newOrder);
     }
+
+
+
 
     @Override
     public List<Order> getAllOrders() {

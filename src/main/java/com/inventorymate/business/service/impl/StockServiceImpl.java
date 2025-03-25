@@ -41,7 +41,7 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public Stock updateStock(StockRequest stockRequest, Long stockId) {
-        Stock stockToUpdate = getStockById(stockId); // Ya maneja ResourceNotFoundException
+        Stock stockToUpdate = getStockById(stockId);
         return createOrUpdateStock(stockRequest, stockToUpdate);
     }
 
@@ -60,7 +60,6 @@ public class StockServiceImpl implements StockService {
         stock.setProduct(product);
         stock.setQuantity(stockRequest.getQuantity());
         stock.setPurchaseDate(LocalDate.now());
-        stock.setUnitType(stockRequest.getUnitType());
         stock.setExpirationDate(stockRequest.getExpirationDate());
 
         validateStock(stock);
@@ -71,10 +70,6 @@ public class StockServiceImpl implements StockService {
     private void validateStock(Stock stock) {
         if (stock.getQuantity() <= 0) {
             throw new ValidationException("Quantity must be greater than 0.");
-        }
-
-        if (stock.getUnitType() == null) {
-            throw new ValidationException("Unit type cannot be null.");
         }
 
         if (stock.getProduct() == null) {

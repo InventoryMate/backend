@@ -5,6 +5,7 @@ import com.inventorymate.business.model.Product;
 import com.inventorymate.business.repository.CategoryRepository;
 import com.inventorymate.business.repository.ProductRepository;
 import com.inventorymate.business.service.ProductService;
+import com.inventorymate.exception.ResourceNotFoundException;
 import com.inventorymate.exception.ValidationException;
 import org.springframework.stereotype.Service;
 
@@ -57,15 +58,29 @@ public class ProductServiceImpl implements ProductService {
                     () -> new ValidationException("Product category does not exist.")
             ));
         }
+
+        // Validate if unit type is changing
+        if (productId != null) { // Only check if it's an update
+            Product existingProduct = productRepository.findById(productId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+            if (!existingProduct.getUnitType().equals(productRequest.getUnitType())) {
+                throw new ValidationException("Cannot change unit type from "
+                        + existingProduct.getUnitType() + " to " + productRequest.getUnitType());
+            }
+        }
+
         product.setProductName(productRequest.getProductName());
         product.setProductDescription(productRequest.getProductDescription());
         product.setProductPrice(productRequest.getProductPrice());
         product.setExpirable(productRequest.isExpirable());
+        product.setUnitType(productRequest.getUnitType()); // This is now safe
 
         validateProduct(product, productId);
 
         return productRepository.save(product);
     }
+
 
     @Override
     public List<Product> getProductsByCategory(Long categoryId) {
@@ -80,6 +95,10 @@ public class ProductServiceImpl implements ProductService {
     private void validateProduct(Product product, Long productId) {
         if (product.getProductName() == null || product.getProductName().trim().isEmpty()) {
             throw new ValidationException("Product name is required.");
+        }
+
+        if (product.getUnitType() == null) {
+            throw new ValidationException("Unit type cannot be null.");
         }
 
         if (product.getProductName().length() < 3 || product.getProductName().length() > 50) {

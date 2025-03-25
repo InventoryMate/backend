@@ -24,10 +24,6 @@ public class Stock {
     @Column(name = "quantity", nullable = false)
     private int quantity;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "unit_type", nullable = false, length = 20)
-    private UnitType unitType; // kg, unidad, litro, etc.
-
     @Temporal(TemporalType.DATE)
     @Column(name = "purchase_date", nullable = false)
     private LocalDate purchaseDate;
@@ -38,6 +34,14 @@ public class Stock {
 
     public boolean isExpired() {
         return expirationDate != null && expirationDate.isBefore(LocalDate.now());
+    }
+
+    public void consumeStock(int quantity) {
+        if (this.quantity >= quantity) {
+            this.quantity -= quantity;
+        } else {
+            throw new IllegalStateException("Not enough stock to consume");
+        }
     }
 }
 

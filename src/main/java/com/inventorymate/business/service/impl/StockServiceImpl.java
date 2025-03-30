@@ -55,7 +55,7 @@ public class StockServiceImpl implements StockService {
 
     private Stock createOrUpdateStock(StockRequest stockRequest, Stock stock) {
         Product product = productRepository.findById(stockRequest.getProductId())
-                .orElseThrow(() -> new ResourceNotFoundException("Product with Id " + stockRequest.getProductId() + " no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product with Id " + stockRequest.getProductId() + " not found"));
 
         stock.setProduct(product);
         stock.setQuantity(stockRequest.getQuantity());

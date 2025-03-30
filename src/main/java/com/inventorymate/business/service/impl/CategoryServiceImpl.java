@@ -40,8 +40,7 @@ public class CategoryServiceImpl implements CategoryService {
     public Category updateCategory(CategoryRequest categoryRequest, Long categoryId) {
         Category categoryToUpdate = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Category with Id " + categoryId + " not found"));
-
-        categoryToUpdate.setCategoryName(categoryRequest.getCategoryName());
+        
         return createOrUpdateCategory(categoryRequest, categoryToUpdate, categoryId);
     }
 

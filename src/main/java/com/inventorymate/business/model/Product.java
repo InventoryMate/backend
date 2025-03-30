@@ -24,14 +24,15 @@ public class Product {
     @Column(name = "product_price", nullable = false)
     private double productPrice;
 
-    @ManyToOne
-    @JoinColumn(name = "category_id", referencedColumnName = "id")
-    private Category category;
-
     @Column(name = "is_expirable", nullable = false)
     private boolean isExpirable;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "unit_type", nullable = false, length = 20)
-    private UnitType unitType; // kg, unidad, litro, etc.
+    private UnitType unitType; // kg, unit, liter, etc.
+
+    @ManyToOne
+    @JoinColumn(name = "category_id", referencedColumnName = "id")
+    private Category category;
+
 }

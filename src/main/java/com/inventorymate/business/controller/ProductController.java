@@ -2,12 +2,9 @@ package com.inventorymate.business.controller;
 
 import com.inventorymate.business.Dto.ProductRequest;
 import com.inventorymate.business.model.Product;
-import com.inventorymate.business.model.Stock;
-import com.inventorymate.business.repository.ProductRepository;
 import com.inventorymate.business.service.ProductService;
 import com.inventorymate.exception.ResourceNotFoundException;
 import com.inventorymate.exception.ValidationException;
-import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

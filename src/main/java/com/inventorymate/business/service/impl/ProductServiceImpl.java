@@ -81,9 +81,11 @@ public class ProductServiceImpl implements ProductService {
         return productRepository.save(product);
     }
 
-
     @Override
     public List<Product> getProductsByCategory(Long categoryId) {
+        if (categoryId == 0) {
+            return productRepository.findByCategoryIsNull();
+        }
         return productRepository.findByCategoryId(categoryId);
     }
 

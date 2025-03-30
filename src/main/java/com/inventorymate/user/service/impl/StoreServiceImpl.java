@@ -7,7 +7,6 @@ import com.inventorymate.user.repository.StoreRepository;
 import com.inventorymate.user.service.StoreService;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Service

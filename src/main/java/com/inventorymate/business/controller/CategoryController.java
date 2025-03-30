@@ -2,8 +2,6 @@ package com.inventorymate.business.controller;
 
 import com.inventorymate.business.Dto.CategoryRequest;
 import com.inventorymate.business.model.Category;
-import com.inventorymate.business.model.Stock;
-import com.inventorymate.business.repository.CategoryRepository;
 import com.inventorymate.business.service.CategoryService;
 import com.inventorymate.exception.ResourceNotFoundException;
 import com.inventorymate.exception.ValidationException;
@@ -16,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-//CHANGE REQUEST MAPPING TO /api/InventoryMate/v1/categories
 @Controller
 @RequestMapping("/api/InventoryMate/v1/categories")
 public class CategoryController {

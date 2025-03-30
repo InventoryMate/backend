@@ -3,20 +3,22 @@ package com.inventorymate.business.service.impl;
 import com.inventorymate.business.Dto.CategoryRequest;
 import com.inventorymate.business.model.Category;
 import com.inventorymate.business.repository.CategoryRepository;
+import com.inventorymate.business.repository.ProductRepository;
 import com.inventorymate.business.service.CategoryService;
 import com.inventorymate.exception.ResourceNotFoundException;
 import com.inventorymate.exception.ValidationException;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Service
 public class CategoryServiceImpl implements CategoryService {
 
     private CategoryRepository categoryRepository;
-    public CategoryServiceImpl(CategoryRepository categoryRepository) {
+    private ProductRepository productRepository;
+    public CategoryServiceImpl(CategoryRepository categoryRepository, ProductRepository productRepository) {
         this.categoryRepository = categoryRepository;
+        this.productRepository = productRepository;
     }
 
     @Override
@@ -48,6 +50,11 @@ public class CategoryServiceImpl implements CategoryService {
         if (!categoryRepository.existsById(categoryId)) {
             throw new ResourceNotFoundException("Category with Id " + categoryId + " not found");
         }
+
+        // Actualizar los productos que tienen esta categoría, estableciendo categoryId como null
+        productRepository.updateCategoryToNull(categoryId);
+
+        // Ahora sí, eliminar la categoría
         categoryRepository.deleteById(categoryId);
     }
 

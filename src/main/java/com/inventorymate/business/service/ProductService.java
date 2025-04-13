@@ -13,4 +13,5 @@ public interface ProductService {
     public void deleteProduct(Long productId);
     public boolean existsByProductName(String productName);
     public List<Product> getProductsByCategory(Long categoryId);
+    public Long getTotalStockByProductId(Long productId);
 }

@@ -93,6 +93,15 @@ public class ProductController {
         return ResponseEntity.ok(exists);
     }
 
+    // URL: http://localhost:8081/api/InventoryMate/v1/products/{productId}/stocks-total
+    // Method: GET
+    // Description: Get total stock by product id
+    @GetMapping("/{productId}/stocks-total")
+    public ResponseEntity<Long> getTotalStockByProductId(@PathVariable(name = "productId") Long productId) {
+        Long totalStock = productService.getTotalStockByProductId(productId);
+        return ResponseEntity.ok(totalStock);
+    }
+
     // Global Exception Handling for Not Found & Validation Exceptions
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<String> handleNotFoundException(ResourceNotFoundException ex) {

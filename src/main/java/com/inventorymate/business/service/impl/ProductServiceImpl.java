@@ -4,6 +4,7 @@ import com.inventorymate.business.Dto.ProductRequest;
 import com.inventorymate.business.model.Product;
 import com.inventorymate.business.repository.CategoryRepository;
 import com.inventorymate.business.repository.ProductRepository;
+import com.inventorymate.business.repository.StockRepository;
 import com.inventorymate.business.service.ProductService;
 import com.inventorymate.exception.ResourceNotFoundException;
 import com.inventorymate.exception.ValidationException;
@@ -16,10 +17,14 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
+    private final StockRepository stockRepository;
 
-    public ProductServiceImpl(ProductRepository productRepository, CategoryRepository categoryRepository) {
+    public ProductServiceImpl(ProductRepository productRepository,
+                              CategoryRepository categoryRepository,
+                              StockRepository stockRepository) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
+        this.stockRepository = stockRepository;
     }
 
     @Override
@@ -87,6 +92,16 @@ public class ProductServiceImpl implements ProductService {
             return productRepository.findByCategoryIsNull();
         }
         return productRepository.findByCategoryId(categoryId);
+    }
+
+    @Override
+    public Long getTotalStockByProductId(Long productId) {
+        if (!productRepository.existsById(productId)) {
+            throw new ResourceNotFoundException("Product with ID " + productId + " not found.");
+        }
+
+        Long total = stockRepository.getAvailableStockByProductId(productId);
+        return total != null ? total : 0L;
     }
 
     @Override

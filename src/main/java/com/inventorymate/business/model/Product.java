@@ -1,9 +1,12 @@
 package com.inventorymate.business.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -35,4 +38,7 @@ public class Product {
     @JoinColumn(name = "category_id", referencedColumnName = "id")
     private Category category;
 
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonManagedReference
+    private List<Stock> stocks;
 }

@@ -29,20 +29,30 @@ public class StockServiceImpl implements StockService {
     }
 
     @Override
+    public List<Stock> getAllStocksByProduct(Long productId) {
+        List<Stock> stocks = stockRepository.findByProductIdOrderByPurchaseDateAsc(productId);
+        if (stocks.isEmpty()) {
+            throw new ResourceNotFoundException("No stock found for product with ID: " + productId);
+        }
+        return stocks;
+    }
+
+
+    @Override
     public Stock getStockById(Long stockId) {
         return stockRepository.findById(stockId)
                 .orElseThrow(() -> new ResourceNotFoundException("Stock with Id " + stockId + " not found"));
     }
 
     @Override
-    public Stock saveStock(StockRequest newStock) {
-        return createOrUpdateStock(newStock, new Stock());
+    public Stock saveStock(StockRequest newStock, long productId) {
+        return createOrUpdateStock(newStock, new Stock(), productId);
     }
 
     @Override
     public Stock updateStock(StockRequest stockRequest, Long stockId) {
         Stock stockToUpdate = getStockById(stockId);
-        return createOrUpdateStock(stockRequest, stockToUpdate);
+        return createOrUpdateStock(stockRequest, stockToUpdate, stockToUpdate.getProduct().getId());
     }
 
     @Override
@@ -53,9 +63,9 @@ public class StockServiceImpl implements StockService {
         stockRepository.deleteById(stockId);
     }
 
-    private Stock createOrUpdateStock(StockRequest stockRequest, Stock stock) {
-        Product product = productRepository.findById(stockRequest.getProductId())
-                .orElseThrow(() -> new ResourceNotFoundException("Product with Id " + stockRequest.getProductId() + " not found"));
+    private Stock createOrUpdateStock(StockRequest stockRequest, Stock stock, Long productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with Id " + productId + " not found"));
 
         stock.setProduct(product);
         stock.setQuantity(stockRequest.getQuantity());

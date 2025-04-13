@@ -1,5 +1,6 @@
 package com.inventorymate.business.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,6 +20,7 @@ public class Stock {
 
     @ManyToOne
     @JoinColumn(name = "product_id", referencedColumnName = "id", nullable = false)
+    @JsonBackReference
     private Product product;
 
     @Column(name = "quantity", nullable = false)

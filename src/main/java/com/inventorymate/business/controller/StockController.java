@@ -15,7 +15,7 @@ import java.util.List;
 
 
 @RestController
-@RequestMapping("/api/InventoryMate/v1/stocks")
+@RequestMapping("/api/InventoryMate/v1")
 public class StockController {
     private final StockService stockService;
 
@@ -24,13 +24,22 @@ public class StockController {
         this.stockService = stockService;
     }
 
-    // URL: http://localhost:8081/api/InventoryMate/v1/stocks
+    // URL: http://localhost:8081/api/InventoryMate/v1/products/{productId}/stocks
     // Method: GET
     // Description: Get all stocks
     @Transactional(readOnly = true)
-    @GetMapping
+    @GetMapping("/stocks")
     public ResponseEntity<List<Stock>> getAllStocks() {
-        List<Stock> stocks = stockService.getAllStocks();
+        return ResponseEntity.ok(stockService.getAllStocks());
+    }
+
+    // URL: http://localhost:8081/api/InventoryMate/v1/products/{productId}/stocks
+    // Method: GET
+    // Description: Get all stocks
+    @Transactional(readOnly = true)
+    @GetMapping("/products/{productId}/stocks")
+    public ResponseEntity<List<Stock>> getAllStocksByProduct(@PathVariable(name = "productId") Long productId) {
+        List<Stock> stocks = stockService.getAllStocksByProduct(productId);
         return stocks.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(stocks);
     }
 
@@ -38,7 +47,7 @@ public class StockController {
     // Method: GET
     // Description: Get stock by id
     @Transactional(readOnly = true)
-    @GetMapping("/{stocksId}")
+    @GetMapping("/stocks/{stocksId}")
     public ResponseEntity<Stock> getStockById(@PathVariable(name = "stocksId") Long stockId) {
         Stock stock = stockService.getStockById(stockId);
         return ResponseEntity.ok(stock);
@@ -48,9 +57,10 @@ public class StockController {
     // Method: POST
     // Description: Save stock
     @Transactional
-    @PostMapping
-    public ResponseEntity<Stock> createStock(@RequestBody StockRequest stockRequest) {
-        Stock savedStock = stockService.saveStock(stockRequest);
+    @PostMapping("/products/{productId}/stocks")
+    public ResponseEntity<Stock> createStock(@PathVariable(name = "productId") Long productId,
+                                             @RequestBody StockRequest stockRequest) {
+        Stock savedStock = stockService.saveStock(stockRequest, productId);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedStock);
     }
 
@@ -58,8 +68,9 @@ public class StockController {
     // Method: PUT
     // Description: Update Stock
     @Transactional
-    @PutMapping("/{stockId}")
-    public ResponseEntity<Stock> updateStock(@PathVariable(name = "stockId") Long stockId, @RequestBody StockRequest updatedStock) {
+    @PutMapping("/stocks/{stockId}")
+    public ResponseEntity<Stock> updateStock(@PathVariable(name = "stockId") Long stockId,
+                                             @RequestBody StockRequest updatedStock) {
         Stock stock = stockService.updateStock(updatedStock, stockId);
         return ResponseEntity.ok(stock);
     }
@@ -69,7 +80,7 @@ public class StockController {
     //Method: DELETE
     // Description: Delete Stock
     @Transactional
-    @DeleteMapping("/{stockId}")
+    @DeleteMapping("/stocks/{stockId}")
     public ResponseEntity<Void> deleteStock(@PathVariable(name = "stockId") Long stockId) {
         stockService.deleteStock(stockId);
         return ResponseEntity.noContent().build();

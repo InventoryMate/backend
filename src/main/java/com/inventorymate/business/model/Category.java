@@ -1,6 +1,8 @@
 package com.inventorymate.business.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.inventorymate.user.model.Store;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,4 +21,9 @@ public class Category {
 
     @Column(name = "category_name", nullable = false, length = 50)
     private String categoryName;
+
+    @ManyToOne
+    @JoinColumn(name = "store_id", referencedColumnName = "id", nullable = false)
+    @JsonBackReference
+    private Store store;
 }

@@ -6,9 +6,9 @@ import com.inventorymate.business.model.Order;
 import java.util.List;
 
 public interface OrderService {
-    Order createOrder(OrderRequest orderRequests);
-    public List<Order> getAllOrders();
-    public Order getOrderById(Long orderId);
-    public Order updateOrder(OrderRequest order, Long orderId);
-    public void deleteOrder(Long orderId);
+    Order createOrder(OrderRequest orderRequests, Long storeId);
+    public List<Order> getAllOrders(Long storeId);
+    public Order getOrderById(Long orderId, Long storeId);
+    public Order updateOrder(OrderRequest order, Long orderId, Long storeId);
+    public void deleteOrder(Long orderId, Long storeId);
 }

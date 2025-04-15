@@ -5,16 +5,17 @@ import com.inventorymate.business.model.Category;
 import com.inventorymate.business.service.CategoryService;
 import com.inventorymate.exception.ResourceNotFoundException;
 import com.inventorymate.exception.ValidationException;
+import com.inventorymate.user.model.CustomUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Controller
+@RestController
 @RequestMapping("/api/InventoryMate/v1/categories")
 public class CategoryController {
 
@@ -30,8 +31,8 @@ public class CategoryController {
     // Description: Get all categories
     @Transactional(readOnly = true)
     @GetMapping
-    public ResponseEntity<List<Category>> getAllCategories() {
-        List<Category> categories = categoryService.getAllCategories();
+    public ResponseEntity<List<Category>> getAllCategories(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        List<Category> categories = categoryService.getAllCategories(userDetails.getStoreId());
         return categories.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(categories);
     }
 
@@ -40,8 +41,9 @@ public class CategoryController {
     // Description: Get category by id
     @Transactional(readOnly = true)
     @GetMapping("/{categoryId}")
-    public ResponseEntity<Category> getCategoryById(@PathVariable(name = "categoryId") Long categoryId) {
-        Category category = categoryService.getCategoryById(categoryId);
+    public ResponseEntity<Category> getCategoryById(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                    @PathVariable(name = "categoryId") Long categoryId) {
+        Category category = categoryService.getCategoryById(categoryId, userDetails.getStoreId());
         return ResponseEntity.ok(category);
     }
 
@@ -50,8 +52,11 @@ public class CategoryController {
     // Description: Save category
     @Transactional
     @PostMapping
-    public ResponseEntity<Category>createCategory(@RequestBody CategoryRequest category) {
-        Category savedCategory = categoryService.saveCategory(category);
+    public ResponseEntity<Category>createCategory(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                  @RequestBody CategoryRequest category) {
+        System.out.println("User details: " + userDetails);
+        System.out.println("getStoreId " + userDetails.getStoreId());
+        Category savedCategory = categoryService.saveCategory(category, userDetails.getStoreId());
         return ResponseEntity.status(HttpStatus.CREATED).body(savedCategory);
     }
 
@@ -60,8 +65,10 @@ public class CategoryController {
     // Description: Update category
     @Transactional
     @PutMapping("/{categoryId}")
-    public ResponseEntity<Category> updateCategory(@PathVariable(name = "categoryId") Long categoryId, @RequestBody CategoryRequest updatedCategory) {
-        Category category = categoryService.updateCategory(updatedCategory, categoryId);
+    public ResponseEntity<Category> updateCategory(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                   @PathVariable(name = "categoryId") Long categoryId,
+                                                   @RequestBody CategoryRequest updatedCategory) {
+        Category category = categoryService.updateCategory(updatedCategory, categoryId, userDetails.getStoreId());
         return ResponseEntity.ok(category);
     }
 
@@ -70,8 +77,9 @@ public class CategoryController {
     // Description: Delete category
     @Transactional
     @DeleteMapping("/{categoryId}")
-    public ResponseEntity<String> deleteCategory(@PathVariable(name = "categoryId") Long categoryId) {
-        categoryService.deleteCategory(categoryId);
+    public ResponseEntity<String> deleteCategory(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                 @PathVariable(name = "categoryId") Long categoryId) {
+        categoryService.deleteCategory(categoryId, userDetails.getStoreId());
         return ResponseEntity.noContent().build();
     }
 

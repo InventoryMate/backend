@@ -30,15 +30,18 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse registerStore(RegisterStoreRequest registerStoreRequest) {
-        Store restaurant = Store.builder()
+        Store store = Store.builder()
                 .username(registerStoreRequest.getUsername())
                 .password(passwordEncoder.encode(registerStoreRequest.getPassword()))
                 .storeName(registerStoreRequest.getStoreName())
                 .build();
-        storeRepository.save(restaurant);
+        storeRepository.save(store);
+
+        String token = jwtService.getToken(store, store.getId());
         return AuthResponse.builder()
-                .token(jwtService.getToken(restaurant))
-                .id(restaurant.getId())
+                .token(token)
+                .id(store.getId())
+                .storeName(store.getStoreName())
                 .build();
     }
 
@@ -54,7 +57,7 @@ public class AuthServiceImpl implements AuthService {
         var store = storeRepository.findByUsername(loginRequest.getUsername())
                 .orElseThrow(() -> new ValidationException("User not found"));
 
-        String token = jwtService.getToken(store);
+        String token = jwtService.getToken(store, store.getId());
 
         return AuthResponse.builder()
                 .token(token)

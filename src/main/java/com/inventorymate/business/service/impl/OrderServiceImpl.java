@@ -12,6 +12,8 @@ import com.inventorymate.business.repository.StockRepository;
 import com.inventorymate.business.service.OrderService;
 import com.inventorymate.exception.ResourceNotFoundException;
 import com.inventorymate.exception.ValidationException;
+import com.inventorymate.user.model.Store;
+import com.inventorymate.user.repository.StoreRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,34 +28,43 @@ public class OrderServiceImpl implements OrderService {
     private OrderRepository orderRepository;
     private StockRepository stockRepository;
     private ProductRepository productRepository;
+    private StoreRepository storeRepository;
 
-    public OrderServiceImpl(OrderRepository orderRepository, StockRepository stockRepository, ProductRepository productRepository) {
+    public OrderServiceImpl(OrderRepository orderRepository,
+                            StockRepository stockRepository,
+                            ProductRepository productRepository,
+                            StoreRepository storeRepository) {
         this.orderRepository = orderRepository;
         this.stockRepository = stockRepository;
         this.productRepository = productRepository;
+        this.storeRepository = storeRepository;
     }
 
 
     @Transactional
     @Override
-    public Order createOrder(OrderRequest orderRequestDTO) {
+    public Order createOrder(OrderRequest orderRequestDTO, Long storeId) {
         // Validate the order request
         validateOrderRequest(orderRequestDTO);
+
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Store not found"));
 
         // Create a new order
         Order newOrder = new Order();
         newOrder.setOrderDate(LocalDateTime.now());
+        newOrder.setStore(store);
 
         List<OrderDetail> orderDetails = new ArrayList<>();
         List<String> insufficientStockProducts = new ArrayList<>();
         double total = 0.0;
 
         for (OrderDetailRequest orderDetailRequest : orderRequestDTO.getOrderDetails()) {
-            Product product = productRepository.findById(orderDetailRequest.getProductId())
+            Product product = productRepository.findByIdAndStore_Id(orderDetailRequest.getProductId(), storeId)
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
             // Get available stock sorted by purchase date (FIFO strategy)
-            List<Stock> stocks = stockRepository.findByProductIdOrderByPurchaseDateAsc(product.getId())
+            List<Stock> stocks = stockRepository.findByProductIdAndStore_IdOrderByPurchaseDateAsc(product.getId(), storeId)
                     .stream()
                     .filter(stock -> !stock.isExpired()) // Ignore expired stock
                     .toList();
@@ -109,31 +120,31 @@ public class OrderServiceImpl implements OrderService {
     }
 
 
-
-
     @Override
-    public List<Order> getAllOrders() {
-        return orderRepository.findAll();
+    public List<Order> getAllOrders(Long storeId) {
+        return orderRepository.findByStore_Id(storeId);
     }
 
     @Override
-    public Order getOrderById(Long orderId) {
-        return orderRepository.findById(orderId).orElse(null);
+    public Order getOrderById(Long orderId, Long storeId) {
+        return orderRepository.findByIdAndStore_Id(orderId, storeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order with ID " + orderId + " not found in this store"));
     }
 
     // Normally this method is not used.
     @Transactional
     @Override
-    public Order updateOrder(OrderRequest order, Long orderId) {
+    public Order updateOrder(OrderRequest order, Long orderId, Long storeId) {
         return null;
     }
 
     @Override
-    public void deleteOrder(Long orderId) {
-        if (!orderRepository.existsById(orderId)) {
-            throw new ResourceNotFoundException("Order with Id " + orderId + " not found");
-        }
-        orderRepository.deleteById(orderId);
+    @Transactional
+    public void deleteOrder(Long orderId, Long storeId) {
+        Order order = orderRepository.findByIdAndStore_Id(orderId, storeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        orderRepository.delete(order);
     }
 
     private void validateOrderRequest(OrderRequest orderRequest) {

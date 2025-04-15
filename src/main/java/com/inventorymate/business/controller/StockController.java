@@ -1,13 +1,16 @@
 package com.inventorymate.business.controller;
 
 import com.inventorymate.business.Dto.StockRequest;
+import com.inventorymate.business.model.Product;
 import com.inventorymate.business.model.Stock;
 import com.inventorymate.business.service.StockService;
 import com.inventorymate.exception.ResourceNotFoundException;
 import com.inventorymate.exception.ValidationException;
+import com.inventorymate.user.model.CustomUserDetails;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,13 +27,14 @@ public class StockController {
         this.stockService = stockService;
     }
 
-    // URL: http://localhost:8081/api/InventoryMate/v1/products/{productId}/stocks
+    // URL: http://localhost:8081/api/InventoryMate/v1/stocks
     // Method: GET
     // Description: Get all stocks
     @Transactional(readOnly = true)
     @GetMapping("/stocks")
-    public ResponseEntity<List<Stock>> getAllStocks() {
-        return ResponseEntity.ok(stockService.getAllStocks());
+    public ResponseEntity<List<Stock>> getAllStocks(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        List<Stock> stocks = stockService.getAllStocks(userDetails.getStoreId());
+        return stocks.isEmpty()? ResponseEntity.noContent().build() : ResponseEntity.ok(stocks);
     }
 
     // URL: http://localhost:8081/api/InventoryMate/v1/products/{productId}/stocks
@@ -38,8 +42,9 @@ public class StockController {
     // Description: Get all stocks
     @Transactional(readOnly = true)
     @GetMapping("/products/{productId}/stocks")
-    public ResponseEntity<List<Stock>> getAllStocksByProduct(@PathVariable(name = "productId") Long productId) {
-        List<Stock> stocks = stockService.getAllStocksByProduct(productId);
+    public ResponseEntity<List<Stock>> getAllStocksByProduct(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                             @PathVariable(name = "productId") Long productId) {
+        List<Stock> stocks = stockService.getAllStocksByProduct(productId, userDetails.getStoreId());
         return stocks.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(stocks);
     }
 
@@ -48,8 +53,9 @@ public class StockController {
     // Description: Get stock by id
     @Transactional(readOnly = true)
     @GetMapping("/stocks/{stocksId}")
-    public ResponseEntity<Stock> getStockById(@PathVariable(name = "stocksId") Long stockId) {
-        Stock stock = stockService.getStockById(stockId);
+    public ResponseEntity<Stock> getStockById(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                              @PathVariable(name = "stocksId") Long stockId) {
+        Stock stock = stockService.getStockById(stockId, userDetails.getStoreId());
         return ResponseEntity.ok(stock);
     }
 
@@ -58,9 +64,10 @@ public class StockController {
     // Description: Save stock
     @Transactional
     @PostMapping("/products/{productId}/stocks")
-    public ResponseEntity<Stock> createStock(@PathVariable(name = "productId") Long productId,
+    public ResponseEntity<Stock> createStock(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                             @PathVariable(name = "productId") Long productId,
                                              @RequestBody StockRequest stockRequest) {
-        Stock savedStock = stockService.saveStock(stockRequest, productId);
+        Stock savedStock = stockService.saveStock(stockRequest, productId, userDetails.getStoreId());
         return ResponseEntity.status(HttpStatus.CREATED).body(savedStock);
     }
 
@@ -69,9 +76,10 @@ public class StockController {
     // Description: Update Stock
     @Transactional
     @PutMapping("/stocks/{stockId}")
-    public ResponseEntity<Stock> updateStock(@PathVariable(name = "stockId") Long stockId,
+    public ResponseEntity<Stock> updateStock(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                             @PathVariable(name = "stockId") Long stockId,
                                              @RequestBody StockRequest updatedStock) {
-        Stock stock = stockService.updateStock(updatedStock, stockId);
+        Stock stock = stockService.updateStock(updatedStock, stockId, userDetails.getStoreId());
         return ResponseEntity.ok(stock);
     }
 
@@ -81,8 +89,9 @@ public class StockController {
     // Description: Delete Stock
     @Transactional
     @DeleteMapping("/stocks/{stockId}")
-    public ResponseEntity<Void> deleteStock(@PathVariable(name = "stockId") Long stockId) {
-        stockService.deleteStock(stockId);
+    public ResponseEntity<Void> deleteStock(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                            @PathVariable(name = "stockId") Long stockId) {
+        stockService.deleteStock(stockId, userDetails.getStoreId());
         return ResponseEntity.noContent().build();
     }
 

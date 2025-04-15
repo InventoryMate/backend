@@ -8,13 +8,17 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
-    List<Product> findByCategoryId(Long CategoryId);
-    List<Product> findByCategoryIsNull();
-    boolean existsByProductNameIgnoreCase(String productName);
-    Product findByProductNameIgnoreCase(String productName);
+    List<Product> findByStore_Id(Long storeId);
+    List<Product> findByCategoryIdAndStoreId(Long CategoryId, Long storeId);
+    List<Product> findByCategoryIsNullAndStoreId(Long storeId);
+    boolean existsByProductNameIgnoreCaseAndStore_Id(String productName, Long storeId);
+    Product findByProductNameIgnoreCaseAndStore_Id(String productName, Long storeId);
+    Optional<Product> findByIdAndStore_Id(Long productId, Long storeId);
+    boolean existsByIdAndStore_Id(Long productId, Long storeId);
     @Modifying
     @Query("UPDATE Product p SET p.category = NULL WHERE p.category.id = :categoryId")
     void updateCategoryToNull(@Param("categoryId") Long categoryId);

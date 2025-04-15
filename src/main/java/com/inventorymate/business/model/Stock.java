@@ -1,6 +1,7 @@
 package com.inventorymate.business.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.inventorymate.user.model.Store;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -33,6 +34,11 @@ public class Stock {
     @Temporal(TemporalType.DATE)
     @Column(name = "expiration_date")
     private LocalDate expirationDate;
+
+    @ManyToOne
+    @JoinColumn(name = "store_id", referencedColumnName = "id", nullable = false)
+    @JsonBackReference
+    private Store store;
 
     public boolean isExpired() {
         return expirationDate != null && expirationDate.isBefore(LocalDate.now());

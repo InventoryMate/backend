@@ -8,7 +8,10 @@ import com.inventorymate.business.repository.StockRepository;
 import com.inventorymate.business.service.StockService;
 import com.inventorymate.exception.ResourceNotFoundException;
 import com.inventorymate.exception.ValidationException;
+import com.inventorymate.user.model.Store;
+import com.inventorymate.user.repository.StoreRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -18,54 +21,65 @@ public class StockServiceImpl implements StockService {
 
     private final StockRepository stockRepository;
     private final ProductRepository productRepository;
-    public StockServiceImpl(StockRepository stockRepository, ProductRepository productRepository) {
+    private final StoreRepository storeRepository;
+    public StockServiceImpl(StockRepository stockRepository,
+                            ProductRepository productRepository,
+                            StoreRepository storeRepository) {
         this.stockRepository = stockRepository;
         this.productRepository = productRepository;
+        this.storeRepository = storeRepository;
     }
 
     @Override
-    public List<Stock> getAllStocks() {
-        return stockRepository.findAll();
+    public List<Stock> getAllStocks(Long storeId) {
+        return stockRepository.findByStore_Id(storeId);
     }
 
     @Override
-    public List<Stock> getAllStocksByProduct(Long productId) {
-        List<Stock> stocks = stockRepository.findByProductIdOrderByPurchaseDateAsc(productId);
+    public List<Stock> getAllStocksByProduct(Long productId, Long storeId) {
+        List<Stock> stocks = stockRepository.findByProductIdAndStore_IdOrderByPurchaseDateAsc(productId, storeId);
         if (stocks.isEmpty()) {
             throw new ResourceNotFoundException("No stock found for product with ID: " + productId);
         }
         return stocks;
     }
 
-
     @Override
-    public Stock getStockById(Long stockId) {
-        return stockRepository.findById(stockId)
+    public Stock getStockById(Long stockId, Long storeId) {
+        return stockRepository.findByIdAndStore_Id(stockId, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Stock with Id " + stockId + " not found"));
     }
 
     @Override
-    public Stock saveStock(StockRequest newStock, long productId) {
-        return createOrUpdateStock(newStock, new Stock(), productId);
+    @Transactional
+    public Stock saveStock(StockRequest newStock, Long productId, Long storeId) {
+        return createOrUpdateStock(newStock, new Stock(), productId, storeId);
     }
 
     @Override
-    public Stock updateStock(StockRequest stockRequest, Long stockId) {
-        Stock stockToUpdate = getStockById(stockId);
-        return createOrUpdateStock(stockRequest, stockToUpdate, stockToUpdate.getProduct().getId());
+    @Transactional
+    public Stock updateStock(StockRequest stockRequest, Long stockId, Long storeId) {
+        Stock stockToUpdate = getStockById(stockId, storeId);
+        return createOrUpdateStock(stockRequest, stockToUpdate, stockToUpdate.getProduct().getId(), storeId);
     }
 
     @Override
-    public void deleteStock(Long stockId) {
-        if (!stockRepository.existsById(stockId)) {
-            throw new ResourceNotFoundException("Stock with Id " + stockId + " not found");
-        }
-        stockRepository.deleteById(stockId);
+    @Transactional
+    public void deleteStock(Long stockId, Long storeId) {
+        Stock stock = stockRepository.findByIdAndStore_Id(stockId, storeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Stock not found"));
+
+        stockRepository.delete(stock);
     }
 
-    private Stock createOrUpdateStock(StockRequest stockRequest, Stock stock, Long productId) {
+    private Stock createOrUpdateStock(StockRequest stockRequest, Stock stock, Long productId, Long storeId) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with Id " + productId + " not found"));
+
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Store not found"));
+
+        stock.setStore(store);
 
         stock.setProduct(product);
         stock.setQuantity(stockRequest.getQuantity());

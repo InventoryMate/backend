@@ -6,17 +6,17 @@ import com.inventorymate.business.model.Order;
 import com.inventorymate.business.service.OrderService;
 import com.inventorymate.exception.ResourceNotFoundException;
 import com.inventorymate.exception.ValidationException;
+import com.inventorymate.user.model.CustomUserDetails;
 import org.springframework.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
-//CHANGE REQUEST MAPPING TO /api/InventoryMate/v1/orders
 @Controller
 @RequestMapping("/api/InventoryMate/v1/orders")
 public class OrderController {
@@ -33,8 +33,8 @@ public class OrderController {
     // Description: Get all orders
     @Transactional(readOnly = true)
     @GetMapping
-    public ResponseEntity<List<Order>> getAllOrders() {
-        List<Order> orders = orderService.getAllOrders();
+    public ResponseEntity<List<Order>> getAllOrders(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        List<Order> orders = orderService.getAllOrders(userDetails.getStoreId());
         return orders.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(orders);
     }
 
@@ -43,9 +43,9 @@ public class OrderController {
     // Description: Get order by id
     @Transactional(readOnly = true)
     @GetMapping("/{orderId}")
-    public ResponseEntity<Order> getOrderById(@PathVariable(name = "orderId") Long orderId) {
-        Order order = orderService.getOrderById(orderId);
-        return ResponseEntity.ok(order);
+    public ResponseEntity<Order> getOrderById(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                              @PathVariable(name = "orderId") Long orderId) {
+        return ResponseEntity.ok(orderService.getOrderById(orderId, userDetails.getStoreId()));
     }
 
     // URL: http://localhost:8081/api/InventoryMate/v1/orders
@@ -53,9 +53,9 @@ public class OrderController {
     // Description: Save order
     @Transactional
     @PostMapping
-    public ResponseEntity<Order>createOrder(@RequestBody OrderRequest orderRequest) {
-        Order savedOrder = orderService.createOrder(orderRequest);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedOrder);
+    public ResponseEntity<Order>createOrder(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                            @RequestBody OrderRequest orderRequest) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createOrder(orderRequest, userDetails.getStoreId()));
     }
 
     // Normally we don't update orders
@@ -64,10 +64,10 @@ public class OrderController {
     // Description: Update order
     @Transactional
     @PutMapping("/{orderId}")
-    public ResponseEntity<Order> updateOrder(@PathVariable(name = "orderId") Long orderId, @RequestBody OrderRequest updatedOrder) {
-        Order order = orderService.updateOrder(updatedOrder, orderId);
-        return ResponseEntity.ok(order);
-
+    public ResponseEntity<Order> updateOrder(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                             @PathVariable(name = "orderId") Long orderId,
+                                             @RequestBody OrderRequest updatedOrder) {
+        return ResponseEntity.ok(orderService.updateOrder(updatedOrder, orderId, userDetails.getStoreId()));
     }
 
     // URL: http://localhost:8081/api/InventoryMate/v1/order/{orderId}
@@ -75,8 +75,9 @@ public class OrderController {
     // Description: Delete order
     @Transactional
     @DeleteMapping("/{orderId}")
-    public ResponseEntity<String> deleteOrder(@PathVariable Long orderId) {
-        orderService.deleteOrder(orderId);
+    public ResponseEntity<String> deleteOrder(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                              @PathVariable Long orderId) {
+        orderService.deleteOrder(orderId, userDetails.getStoreId());
         return ResponseEntity.noContent().build();
     }
 

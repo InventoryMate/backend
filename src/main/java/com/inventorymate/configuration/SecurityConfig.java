@@ -33,11 +33,11 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authRequest -> authRequest
-                        //.requestMatchers("/api/InventoryMate/v1/products/**").authenticated()
-                        .anyRequest().permitAll() // Permit all for now
+                        .requestMatchers("/api/InventoryMate/v1/auth/**").permitAll()  // Público
+                        .requestMatchers("/api/InventoryMate/v1/categories/**").authenticated()  // Protegido
+                        .anyRequest().authenticated()
                 )
-                .sessionManagement(sessionManager ->
-                        sessionManager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authProvider)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
@@ -79,4 +79,3 @@ public class SecurityConfig {
         return source;
     }
 }
-

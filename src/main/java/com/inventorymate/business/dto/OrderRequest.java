@@ -1,4 +1,4 @@
-package com.inventorymate.business.Dto;
+package com.inventorymate.business.dto;
 
 import lombok.Data;
 

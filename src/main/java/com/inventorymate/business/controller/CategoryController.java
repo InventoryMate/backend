@@ -1,6 +1,6 @@
 package com.inventorymate.business.controller;
 
-import com.inventorymate.business.Dto.CategoryRequest;
+import com.inventorymate.business.dto.CategoryRequest;
 import com.inventorymate.business.model.Category;
 import com.inventorymate.business.service.CategoryService;
 import com.inventorymate.exception.ResourceNotFoundException;

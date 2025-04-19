@@ -1,7 +1,7 @@
 package com.inventorymate.business.service.impl;
 
-import com.inventorymate.business.Dto.OrderDetailRequest;
-import com.inventorymate.business.Dto.OrderRequest;
+import com.inventorymate.business.dto.OrderDetailRequest;
+import com.inventorymate.business.dto.OrderRequest;
 import com.inventorymate.business.model.Order;
 import com.inventorymate.business.model.OrderDetail;
 import com.inventorymate.business.model.Product;

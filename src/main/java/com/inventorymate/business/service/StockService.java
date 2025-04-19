@@ -1,6 +1,6 @@
 package com.inventorymate.business.service;
 
-import com.inventorymate.business.Dto.StockRequest;
+import com.inventorymate.business.dto.StockRequest;
 import com.inventorymate.business.model.Stock;
 
 import java.util.List;

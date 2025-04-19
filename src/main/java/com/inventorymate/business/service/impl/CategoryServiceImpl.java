@@ -1,8 +1,7 @@
 package com.inventorymate.business.service.impl;
 
-import com.inventorymate.business.Dto.CategoryRequest;
+import com.inventorymate.business.dto.CategoryRequest;
 import com.inventorymate.business.model.Category;
-import com.inventorymate.business.model.Order;
 import com.inventorymate.business.repository.CategoryRepository;
 import com.inventorymate.business.repository.ProductRepository;
 import com.inventorymate.business.service.CategoryService;

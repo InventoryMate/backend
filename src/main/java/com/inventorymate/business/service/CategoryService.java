@@ -1,6 +1,6 @@
 package com.inventorymate.business.service;
 
-import com.inventorymate.business.Dto.CategoryRequest;
+import com.inventorymate.business.dto.CategoryRequest;
 import com.inventorymate.business.model.Category;
 
 import java.util.List;

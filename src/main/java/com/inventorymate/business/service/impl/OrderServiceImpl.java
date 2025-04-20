@@ -1,7 +1,9 @@
 package com.inventorymate.business.service.impl;
 
 import com.inventorymate.business.dto.OrderDetailRequest;
+import com.inventorymate.business.dto.OrderDetailResponse;
 import com.inventorymate.business.dto.OrderRequest;
+import com.inventorymate.business.dto.OrderResponse;
 import com.inventorymate.business.model.Order;
 import com.inventorymate.business.model.OrderDetail;
 import com.inventorymate.business.model.Product;
@@ -43,24 +45,20 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional
     @Override
-    public Order createOrder(OrderRequest orderRequestDTO, Long storeId) {
+    public OrderResponse createOrder(OrderRequest orderRequestDTO, Long storeId) {
         // Validate the order request
         validateOrderRequest(orderRequestDTO);
-
-        Store store = storeRepository.findById(storeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Store not found"));
 
         // Create a new order
         Order newOrder = new Order();
         newOrder.setOrderDate(LocalDateTime.now());
-        newOrder.setStore(store);
 
         List<OrderDetail> orderDetails = new ArrayList<>();
         List<String> insufficientStockProducts = new ArrayList<>();
         double total = 0.0;
 
         for (OrderDetailRequest orderDetailRequest : orderRequestDTO.getOrderDetails()) {
-            Product product = productRepository.findByIdAndStore_Id(orderDetailRequest.getProductId(), storeId)
+            Product product = productRepository.findById(orderDetailRequest.getProductId())
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
             // Get available stock sorted by purchase date (FIFO strategy)
@@ -116,7 +114,9 @@ public class OrderServiceImpl implements OrderService {
         newOrder.setTotalPrice(total);
         newOrder.setOrderDetails(orderDetails);
 
-        return orderRepository.save(newOrder);
+        Order savedOrder = orderRepository.save(newOrder);
+        return mapToOrderResponse(savedOrder); // ✅
+
     }
 
 
@@ -161,5 +161,24 @@ public class OrderServiceImpl implements OrderService {
                 throw new ValidationException("Product quantity must be greater than zero.");
             }
         }
+    }
+
+    private OrderResponse mapToOrderResponse(Order order) {
+        OrderResponse response = new OrderResponse();
+        response.setId(order.getId());
+        response.setOrderDate(order.getOrderDate());
+        response.setTotalPrice(order.getTotalPrice());
+
+        List<OrderDetailResponse> detailResponses = order.getOrderDetails().stream().map(detail -> {
+            OrderDetailResponse detailResponse = new OrderDetailResponse();
+            detailResponse.setProductId(detail.getProduct().getId());
+            detailResponse.setProductName(detail.getProduct().getProductName());
+            detailResponse.setQuantity(detail.getQuantity());
+            detailResponse.setSubtotalPrice(detail.getSubtotalPrice());
+            return detailResponse;
+        }).toList();
+
+        response.setOrderDetails(detailResponses);
+        return response;
     }
 }

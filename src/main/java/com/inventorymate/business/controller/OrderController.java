@@ -1,6 +1,7 @@
 package com.inventorymate.business.controller;
 
 import com.inventorymate.business.Dto.OrderRequest;
+import com.inventorymate.business.Dto.OrderResponse;
 import com.inventorymate.business.model.Order;
 
 import com.inventorymate.business.service.OrderService;
@@ -53,9 +54,8 @@ public class OrderController {
     // Description: Save order
     @Transactional
     @PostMapping
-    public ResponseEntity<Order>createOrder(@RequestBody OrderRequest orderRequest) {
-        Order savedOrder = orderService.createOrder(orderRequest);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedOrder);
+    public ResponseEntity<OrderResponse> createOrder(@RequestBody OrderRequest orderRequest) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createOrder(orderRequest));
     }
 
     // Normally we don't update orders

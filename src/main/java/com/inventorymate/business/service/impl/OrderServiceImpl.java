@@ -1,7 +1,9 @@
 package com.inventorymate.business.service.impl;
 
 import com.inventorymate.business.Dto.OrderDetailRequest;
+import com.inventorymate.business.Dto.OrderDetailResponse;
 import com.inventorymate.business.Dto.OrderRequest;
+import com.inventorymate.business.Dto.OrderResponse;
 import com.inventorymate.business.model.Order;
 import com.inventorymate.business.model.OrderDetail;
 import com.inventorymate.business.model.Product;
@@ -36,7 +38,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional
     @Override
-    public Order createOrder(OrderRequest orderRequestDTO) {
+    public OrderResponse createOrder(OrderRequest orderRequestDTO) {
         // Validate the order request
         validateOrderRequest(orderRequestDTO);
 
@@ -105,11 +107,10 @@ public class OrderServiceImpl implements OrderService {
         newOrder.setTotalPrice(total);
         newOrder.setOrderDetails(orderDetails);
 
-        return orderRepository.save(newOrder);
+        Order savedOrder = orderRepository.save(newOrder);
+        return mapToOrderResponse(savedOrder); // ✅
+
     }
-
-
-
 
     @Override
     public List<Order> getAllOrders() {
@@ -150,5 +151,24 @@ public class OrderServiceImpl implements OrderService {
                 throw new ValidationException("Product quantity must be greater than zero.");
             }
         }
+    }
+
+    private OrderResponse mapToOrderResponse(Order order) {
+        OrderResponse response = new OrderResponse();
+        response.setId(order.getId());
+        response.setOrderDate(order.getOrderDate());
+        response.setTotalPrice(order.getTotalPrice());
+
+        List<OrderDetailResponse> detailResponses = order.getOrderDetails().stream().map(detail -> {
+            OrderDetailResponse detailResponse = new OrderDetailResponse();
+            detailResponse.setProductId(detail.getProduct().getId());
+            detailResponse.setProductName(detail.getProduct().getProductName());
+            detailResponse.setQuantity(detail.getQuantity());
+            detailResponse.setSubtotalPrice(detail.getSubtotalPrice());
+            return detailResponse;
+        }).toList();
+
+        response.setOrderDetails(detailResponses);
+        return response;
     }
 }

@@ -25,7 +25,7 @@ public class Stock {
     private Product product;
 
     @Column(name = "quantity", nullable = false)
-    private int quantity;
+    private Long quantity;
 
     @Temporal(TemporalType.DATE)
     @Column(name = "purchase_date", nullable = false)
@@ -52,5 +52,3 @@ public class Stock {
         }
     }
 }
-
-

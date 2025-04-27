@@ -1,6 +1,7 @@
 package com.inventorymate.business.service.impl;
 
 import com.inventorymate.business.dto.StockRequest;
+import com.inventorymate.business.dto.StockResponse;
 import com.inventorymate.business.model.Product;
 import com.inventorymate.business.model.Stock;
 import com.inventorymate.business.repository.ProductRepository;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class StockServiceImpl implements StockService {
@@ -31,17 +33,18 @@ public class StockServiceImpl implements StockService {
     }
 
     @Override
-    public List<Stock> getAllStocks(Long storeId) {
-        return stockRepository.findByStore_Id(storeId);
+    public List<StockResponse> getAllStocks(Long storeId) {
+        List<Stock> stocks = stockRepository.findByStore_Id(storeId);
+        return stocks.stream().map(StockResponse::new).collect(Collectors.toList());
     }
 
     @Override
-    public List<Stock> getAllStocksByProduct(Long productId, Long storeId) {
+    public List<StockResponse> getAllStocksByProduct(Long productId, Long storeId) {
         List<Stock> stocks = stockRepository.findByProductIdAndStore_IdOrderByPurchaseDateAsc(productId, storeId);
         if (stocks.isEmpty()) {
             throw new ResourceNotFoundException("No stock found for product with ID: " + productId);
         }
-        return stocks;
+        return stocks.stream().map(StockResponse::new).collect(Collectors.toList());
     }
 
     @Override
@@ -114,4 +117,3 @@ public class StockServiceImpl implements StockService {
         }
     }
 }
-

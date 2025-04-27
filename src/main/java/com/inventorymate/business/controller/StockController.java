@@ -1,6 +1,7 @@
 package com.inventorymate.business.controller;
 
 import com.inventorymate.business.dto.StockRequest;
+import com.inventorymate.business.dto.StockResponse;
 import com.inventorymate.business.model.Stock;
 import com.inventorymate.business.service.StockService;
 import com.inventorymate.exception.ResourceNotFoundException;
@@ -31,8 +32,8 @@ public class StockController {
     // Description: Get all stocks
     @Transactional(readOnly = true)
     @GetMapping("/stocks")
-    public ResponseEntity<List<Stock>> getAllStocks(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        List<Stock> stocks = stockService.getAllStocks(userDetails.getStoreId());
+    public ResponseEntity<List<StockResponse>> getAllStocks(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        List<StockResponse> stocks = stockService.getAllStocks(userDetails.getStoreId());
         return stocks.isEmpty()? ResponseEntity.noContent().build() : ResponseEntity.ok(stocks);
     }
 
@@ -41,9 +42,9 @@ public class StockController {
     // Description: Get all stocks
     @Transactional(readOnly = true)
     @GetMapping("/products/{productId}/stocks")
-    public ResponseEntity<List<Stock>> getAllStocksByProduct(@AuthenticationPrincipal CustomUserDetails userDetails,
-                                                             @PathVariable(name = "productId") Long productId) {
-        List<Stock> stocks = stockService.getAllStocksByProduct(productId, userDetails.getStoreId());
+    public ResponseEntity<List<StockResponse>> getAllStocksByProduct(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                                     @PathVariable(name = "productId") Long productId) {
+        List<StockResponse> stocks = stockService.getAllStocksByProduct(productId, userDetails.getStoreId());
         return stocks.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(stocks);
     }
 

@@ -2,6 +2,7 @@ package com.inventorymate.business.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.inventorymate.ai.model.ProductPredictionSetting;
 import com.inventorymate.user.model.Store;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -48,4 +49,10 @@ public class Product {
     @JoinColumn(name = "store_id", referencedColumnName = "id", nullable = false)
     @JsonBackReference
     private Store store;
+
+    @Column(name = "weekly_sales_estimation")
+    private double weeklySalesEstimation;
+
+    @Column(name = "assigned_for_prediction")
+    private boolean assignedForPrediction;
 }

@@ -6,8 +6,9 @@ import java.util.List;
 
 @Data
 public class PredictionRequest {
-    private List<String> productIds;
-    private int numberOfDays;
+    private List<ProductPredictionDetails> products; // Lista de productos para la predicción
     private Long storeId;
-    private int season;
+    private int predictionDays;  // Días a predecir
+    private String season;       // Estación del año, si es necesario
+    private String date;        // Fecha de la predicción, si es necesario
 }

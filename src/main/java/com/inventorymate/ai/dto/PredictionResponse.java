@@ -1,15 +1,16 @@
 package com.inventorymate.ai.dto;
 
-import java.util.Map;
+import lombok.Data;
 
+import java.util.List;
+
+@Data
 public class PredictionResponse {
-    private Map<String, Integer> predictedStock;
+    private List<PredictionResult> results;
 
-    public Map<String, Integer> getPredictedStock() {
-        return predictedStock;
-    }
-
-    public void setPredictedStock(Map<String, Integer> predictedStock) {
-        this.predictedStock = predictedStock;
+    @Data
+    public static class PredictionResult {
+        private Long productId;
+        private double predictedDemand; // Demanda predicha por Azure
     }
 }

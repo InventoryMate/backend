@@ -19,6 +19,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Product findByProductNameIgnoreCaseAndStore_Id(String productName, Long storeId);
     Optional<Product> findByIdAndStore_Id(Long productId, Long storeId);
     boolean existsByIdAndStore_Id(Long productId, Long storeId);
+    List<Product> findByStore_IdAndAssignedForPrediction(Long storeId, boolean assignedForPrediction);
     @Modifying
     @Query("UPDATE Product p SET p.category = NULL WHERE p.category.id = :categoryId")
     void updateCategoryToNull(@Param("categoryId") Long categoryId);

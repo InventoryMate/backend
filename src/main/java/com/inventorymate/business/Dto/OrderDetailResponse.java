@@ -6,6 +6,6 @@ import lombok.Data;
 public class OrderDetailResponse {
     private Long productId;
     private String productName;
-    private int quantity;
+    private double quantity;
     private double subtotalPrice;
 }

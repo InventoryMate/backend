@@ -26,7 +26,7 @@ public class OrderDetail {
     private Product product;
 
     @Column(name = "quantity", nullable = false)
-    private int quantity;
+    private Double quantity;
 
     @Column(name = "subtotal_price", nullable = false)
     private double subtotalPrice;

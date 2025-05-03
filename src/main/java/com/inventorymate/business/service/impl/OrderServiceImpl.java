@@ -1,10 +1,7 @@
 package com.inventorymate.business.service.impl;
 
 import com.inventorymate.business.dto.*;
-import com.inventorymate.business.model.Order;
-import com.inventorymate.business.model.OrderDetail;
-import com.inventorymate.business.model.Product;
-import com.inventorymate.business.model.Stock;
+import com.inventorymate.business.model.*;
 import com.inventorymate.business.repository.OrderRepository;
 import com.inventorymate.business.repository.ProductRepository;
 import com.inventorymate.business.repository.StockRepository;
@@ -44,10 +41,8 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     @Override
     public OrderResponse createOrder(OrderRequest orderRequestDTO, Long storeId) {
-        // Validate the order request
         validateOrderRequest(orderRequestDTO);
 
-        // Create a new order
         Order newOrder = new Order();
         newOrder.setOrderDate(LocalDateTime.now());
 
@@ -60,66 +55,66 @@ public class OrderServiceImpl implements OrderService {
         List<String> insufficientStockProducts = new ArrayList<>();
         double total = 0.0;
 
-        for (OrderDetailRequest orderDetailRequest : orderRequestDTO.getOrderDetails()) {
-            Product product = productRepository.findById(orderDetailRequest.getProductId())
+        for (OrderDetailRequest request : orderRequestDTO.getOrderDetails()) {
+            Product product = productRepository.findById(request.getProductId())
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
-            // Get available stock sorted by purchase date (FIFO strategy)
+            // Convertir la cantidad solicitada a la unidad del producto
+            double quantityInProductUnit = convertToProductUnit(product, request.getUnitType(), request.getQuantity());
+
+            // Obtener el stock disponible ordenado por fecha de compra
             List<Stock> stocks = stockRepository.findByProductIdAndStore_IdOrderByPurchaseDateAsc(product.getId(), storeId)
                     .stream()
-                    .filter(stock -> !stock.isExpired()) // Ignore expired stock
+                    .filter(stock -> !stock.isExpired())
                     .toList();
 
-            long remainingQuantity = orderDetailRequest.getQuantity();
+            double remainingQuantity = quantityInProductUnit;
             Iterator<Stock> stockIterator = stocks.iterator();
 
             while (remainingQuantity > 0 && stockIterator.hasNext()) {
                 Stock stock = stockIterator.next();
+                double stockQty = stock.getQuantity();
 
-                if (stock.getQuantity() >= remainingQuantity) {
+                if (stockQty >= remainingQuantity) {
                     stock.consumeStock(remainingQuantity);
                     remainingQuantity = 0;
                 } else {
-                    remainingQuantity -= stock.getQuantity();
-                    stock.consumeStock(stock.getQuantity());
+                    remainingQuantity -= stockQty;
+                    stock.consumeStock(stockQty);
                 }
 
-                // If stock reaches 0, delete it
                 if (stock.getQuantity() == 0) {
                     stockRepository.delete(stock);
                 } else {
-                    stockRepository.save(stock); // Save updated stock
+                    stockRepository.save(stock);
                 }
             }
 
-            // If there is not enough stock, add the product to the insufficient stock list
             if (remainingQuantity > 0) {
                 insufficientStockProducts.add(product.getProductName());
             } else {
-                // Add order detail only if enough stock is available
-                OrderDetail orderDetail = new OrderDetail();
-                orderDetail.setOrder(newOrder);
-                orderDetail.setProduct(product);
-                orderDetail.setQuantity(orderDetailRequest.getQuantity());
-                orderDetail.setSubtotalPrice(product.getProductPrice() * orderDetailRequest.getQuantity());
+                OrderDetail detail = new OrderDetail();
+                detail.setOrder(newOrder);
+                detail.setProduct(product);
+                detail.setQuantity(quantityInProductUnit); // cantidad en unidad base del producto
+                detail.setSubtotalPrice(product.getProductPrice() * quantityInProductUnit);
 
-                total += orderDetail.getSubtotalPrice();
-                orderDetails.add(orderDetail);
+                total += detail.getSubtotalPrice();
+                orderDetails.add(detail);
             }
         }
 
-        // If any product has insufficient stock, throw an exception listing all affected products
         if (!insufficientStockProducts.isEmpty()) {
-            throw new ValidationException("Not enough stock for the following products: " + String.join(", ", insufficientStockProducts));
+            throw new ValidationException("Not enough stock for: " + String.join(", ", insufficientStockProducts));
         }
 
-        // Save the order
         newOrder.setTotalPrice(total);
         newOrder.setOrderDetails(orderDetails);
 
         Order savedOrder = orderRepository.save(newOrder);
-        return mapToOrderResponse(savedOrder); // ✅
+        return mapToOrderResponse(savedOrder);
     }
+
 
 
     @Override
@@ -162,8 +157,8 @@ public class OrderServiceImpl implements OrderService {
                         return r;
                     });
 
-                    Map<String, Integer> dailySales = response.getDailySales();
-                    dailySales.put(dayName, dailySales.getOrDefault(dayName, 0) + detail.getQuantity());
+                    Map<String, Double> dailySales = response.getDailySales();
+                    dailySales.put(dayName, dailySales.getOrDefault(dayName, 0.0) + detail.getQuantity());
                 }
             }
         }
@@ -202,6 +197,19 @@ public class OrderServiceImpl implements OrderService {
             }
         }
     }
+
+    private double convertToProductUnit(Product product, UnitType requestUnit, double requestQuantity) {
+        UnitType productUnit = product.getUnitType();
+
+        if (!productUnit.isCompatible(requestUnit)) {
+            throw new ValidationException("Incompatible units: " + requestUnit + " with " + productUnit);
+        }
+
+        // Convertir a "base" (gramos o ml), luego convertir al producto
+        double baseQuantity = requestUnit.toBase(requestQuantity);
+        return productUnit.fromBase(baseQuantity);
+    }
+
 
     private OrderResponse mapToOrderResponse(Order order) {
         OrderResponse response = new OrderResponse();

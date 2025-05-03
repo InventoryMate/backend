@@ -11,7 +11,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @NoArgsConstructor
 public class StockResponse {
-    private Long quantity;
+    private Double quantity;
     private LocalDate purchaseDate;
     private LocalDate expirationDate;
     private Long productId;

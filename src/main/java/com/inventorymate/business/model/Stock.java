@@ -44,7 +44,7 @@ public class Stock {
         return expirationDate != null && expirationDate.isBefore(LocalDate.now());
     }
 
-    public void consumeStock(int quantity) {
+    public void consumeStock(Long quantity) {
         if (this.quantity >= quantity) {
             this.quantity -= quantity;
         } else {

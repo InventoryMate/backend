@@ -43,7 +43,8 @@ public class ProductController {
     // Description: Get product by id
     @Transactional(readOnly = true)
     @GetMapping("/{productId}")
-    public ResponseEntity<Product> getProductById(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable(name = "productId") Long productId) {
+    public ResponseEntity<Product> getProductById(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                  @PathVariable(name = "productId") Long productId) {
         return ResponseEntity.ok(productService.getProductById(productId, userDetails.getStoreId()));
     }
 

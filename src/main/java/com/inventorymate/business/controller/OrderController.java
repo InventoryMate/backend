@@ -34,8 +34,8 @@ public class OrderController {
     // Description: Get all orders
     @Transactional(readOnly = true)
     @GetMapping
-    public ResponseEntity<List<Order>> getAllOrders(@AuthenticationPrincipal CustomUserDetails userDetails) {
-        List<Order> orders = orderService.getAllOrders(userDetails.getStoreId());
+    public ResponseEntity<List<OrderResponse>> getAllOrders(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        List<OrderResponse> orders = orderService.getAllOrders(userDetails.getStoreId());
         return orders.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(orders);
     }
 
@@ -44,7 +44,7 @@ public class OrderController {
     // Description: Get order by id
     @Transactional(readOnly = true)
     @GetMapping("/{orderId}")
-    public ResponseEntity<Order> getOrderById(@AuthenticationPrincipal CustomUserDetails userDetails,
+    public ResponseEntity<OrderResponse> getOrderById(@AuthenticationPrincipal CustomUserDetails userDetails,
                                               @PathVariable(name = "orderId") Long orderId) {
         return ResponseEntity.ok(orderService.getOrderById(orderId, userDetails.getStoreId()));
     }
@@ -65,7 +65,7 @@ public class OrderController {
     // Description: Update order
     @Transactional
     @PutMapping("/{orderId}")
-    public ResponseEntity<Order> updateOrder(@AuthenticationPrincipal CustomUserDetails userDetails,
+    public ResponseEntity<OrderResponse> updateOrder(@AuthenticationPrincipal CustomUserDetails userDetails,
                                              @PathVariable(name = "orderId") Long orderId,
                                              @RequestBody OrderRequest updatedOrder) {
         return ResponseEntity.ok(orderService.updateOrder(updatedOrder, orderId, userDetails.getStoreId()));

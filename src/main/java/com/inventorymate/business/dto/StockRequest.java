@@ -6,6 +6,6 @@ import java.time.LocalDate;
 
 @Data
 public class StockRequest {
-    private int quantity;
+    private Long quantity;
     private LocalDate expirationDate;
 }

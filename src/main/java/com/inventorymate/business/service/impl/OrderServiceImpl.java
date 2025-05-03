@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -53,6 +54,11 @@ public class OrderServiceImpl implements OrderService {
         Order newOrder = new Order();
         newOrder.setOrderDate(LocalDateTime.now());
 
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Store not found"));
+
+        newOrder.setStore(store);
+
         List<OrderDetail> orderDetails = new ArrayList<>();
         List<String> insufficientStockProducts = new ArrayList<>();
         double total = 0.0;
@@ -67,7 +73,7 @@ public class OrderServiceImpl implements OrderService {
                     .filter(stock -> !stock.isExpired()) // Ignore expired stock
                     .toList();
 
-            int remainingQuantity = orderDetailRequest.getQuantity();
+            long remainingQuantity = orderDetailRequest.getQuantity();
             Iterator<Stock> stockIterator = stocks.iterator();
 
             while (remainingQuantity > 0 && stockIterator.hasNext()) {
@@ -116,25 +122,28 @@ public class OrderServiceImpl implements OrderService {
 
         Order savedOrder = orderRepository.save(newOrder);
         return mapToOrderResponse(savedOrder); // ✅
-
     }
 
 
     @Override
-    public List<Order> getAllOrders(Long storeId) {
-        return orderRepository.findByStore_Id(storeId);
+    public List<OrderResponse> getAllOrders(Long storeId) {
+        return orderRepository.findByStore_Id(storeId)
+                .stream()
+                .map(this::mapToOrderResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Order getOrderById(Long orderId, Long storeId) {
-        return orderRepository.findByIdAndStore_Id(orderId, storeId)
+    public OrderResponse getOrderById(Long orderId, Long storeId) {
+        Order order = orderRepository.findByIdAndStore_Id(orderId, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order with ID " + orderId + " not found in this store"));
+        return mapToOrderResponse(order);
     }
 
     // Normally this method is not used.
     @Transactional
     @Override
-    public Order updateOrder(OrderRequest order, Long orderId, Long storeId) {
+    public OrderResponse updateOrder(OrderRequest order, Long orderId, Long storeId) {
         return null;
     }
 
@@ -176,7 +185,7 @@ public class OrderServiceImpl implements OrderService {
             detailResponse.setQuantity(detail.getQuantity());
             detailResponse.setSubtotalPrice(detail.getSubtotalPrice());
             return detailResponse;
-        }).toList();
+        }).collect(Collectors.toList());
 
         response.setOrderDetails(detailResponses);
         return response;

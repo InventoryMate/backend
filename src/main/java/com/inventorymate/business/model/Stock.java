@@ -25,7 +25,7 @@ public class Stock {
     private Product product;
 
     @Column(name = "quantity", nullable = false)
-    private Long quantity;
+    private Double quantity;
 
     @Temporal(TemporalType.DATE)
     @Column(name = "purchase_date", nullable = false)
@@ -44,7 +44,7 @@ public class Stock {
         return expirationDate != null && expirationDate.isBefore(LocalDate.now());
     }
 
-    public void consumeStock(Long quantity) {
+    public void consumeStock(Double quantity) {
         if (this.quantity >= quantity) {
             this.quantity -= quantity;
         } else {

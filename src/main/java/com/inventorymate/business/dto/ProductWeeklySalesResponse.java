@@ -8,5 +8,5 @@ import java.util.Map;
 public class ProductWeeklySalesResponse {
     private Long productId;
     private String productName;
-    private Map<String, Integer> dailySales; // Ex: "Lunes" -> 10
+    private Map<String, Double> dailySales; // Ex: "Lunes" -> 10
 }

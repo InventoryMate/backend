@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,4 +18,5 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     boolean existsByIdAndStore_Id(Long categoryId, Long storeId);
     @EntityGraph(attributePaths = {"orderDetails", "orderDetails.product"})
     Optional<Order> findById(Long id);
+    List<Order> findByStore_IdAndOrderDateBetween(Long storeId, LocalDateTime startDate, LocalDateTime endDate);
 }

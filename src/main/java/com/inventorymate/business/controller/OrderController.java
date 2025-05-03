@@ -2,6 +2,8 @@ package com.inventorymate.business.controller;
 
 import com.inventorymate.business.dto.OrderRequest;
 import com.inventorymate.business.dto.OrderResponse;
+import com.inventorymate.business.dto.ProductSalesRequest;
+import com.inventorymate.business.dto.ProductWeeklySalesResponse;
 import com.inventorymate.business.model.Order;
 
 import com.inventorymate.business.service.OrderService;
@@ -57,6 +59,20 @@ public class OrderController {
     public ResponseEntity<OrderResponse>createOrder(@AuthenticationPrincipal CustomUserDetails userDetails,
                                                     @RequestBody OrderRequest orderRequest) {
         return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createOrder(orderRequest, userDetails.getStoreId()));
+    }
+
+
+    // URL: http://localhost:8081/api/InventoryMate/v1/orders/weekly-sales
+    // Method: POST
+    // Description: Get weekly sales for products
+    @Transactional
+    @PostMapping("/weekly-sales")
+    public ResponseEntity<List<ProductWeeklySalesResponse>> getWeeklySales(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestBody ProductSalesRequest request) {
+
+        List<ProductWeeklySalesResponse> sales = orderService.getWeeklySalesForProducts(request.getProductIds(), userDetails.getStoreId());
+        return ResponseEntity.ok(sales);
     }
 
     // Normally we don't update orders

@@ -105,9 +105,9 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public List<Product> getProductsByCategory(Long categoryId, Long storeId) {
         if (categoryId == 0) {
-            return productRepository.findByCategoryIsNullAndStoreId(storeId);
+            return productRepository.findByCategoryIsNullAndStore_Id(storeId);
         }
-        return productRepository.findByCategoryIdAndStoreId(categoryId, storeId);
+        return productRepository.findByCategoryIdAndStore_Id(categoryId, storeId);
     }
 
     @Override

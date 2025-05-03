@@ -13,8 +13,8 @@ import java.util.Optional;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findByStore_Id(Long storeId);
-    List<Product> findByCategoryIdAndStoreId(Long CategoryId, Long storeId);
-    List<Product> findByCategoryIsNullAndStoreId(Long storeId);
+    List<Product> findByCategoryIdAndStore_Id(Long CategoryId, Long storeId);
+    List<Product> findByCategoryIsNullAndStore_Id(Long storeId);
     boolean existsByProductNameIgnoreCaseAndStore_Id(String productName, Long storeId);
     Product findByProductNameIgnoreCaseAndStore_Id(String productName, Long storeId);
     Optional<Product> findByIdAndStore_Id(Long productId, Long storeId);

@@ -1,9 +1,6 @@
 package com.inventorymate.business.service.impl;
 
-import com.inventorymate.business.dto.OrderDetailRequest;
-import com.inventorymate.business.dto.OrderDetailResponse;
-import com.inventorymate.business.dto.OrderRequest;
-import com.inventorymate.business.dto.OrderResponse;
+import com.inventorymate.business.dto.*;
 import com.inventorymate.business.model.Order;
 import com.inventorymate.business.model.OrderDetail;
 import com.inventorymate.business.model.Product;
@@ -19,10 +16,10 @@ import com.inventorymate.user.repository.StoreRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.time.format.TextStyle;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -138,6 +135,40 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findByIdAndStore_Id(orderId, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order with ID " + orderId + " not found in this store"));
         return mapToOrderResponse(order);
+    }
+
+
+    @Override
+    public List<ProductWeeklySalesResponse> getWeeklySalesForProducts(List<Long> productIds, Long storeId) {
+        LocalDateTime endDate = LocalDateTime.now();
+        LocalDateTime startDate = endDate.minusDays(6); // últimos 7 días incluyendo hoy
+
+        List<Order> orders = orderRepository.findByStore_IdAndOrderDateBetween(storeId, startDate, endDate);
+
+        Map<Long, ProductWeeklySalesResponse> resultMap = new HashMap<>();
+
+        for (Order order : orders) {
+            DayOfWeek day = order.getOrderDate().getDayOfWeek();
+            String dayName = day.getDisplayName(TextStyle.FULL, new Locale("es", "ES")); // "Lunes", "Martes", etc.
+
+            for (OrderDetail detail : order.getOrderDetails()) {
+                Long productId = detail.getProduct().getId();
+                if (productIds.contains(productId)) {
+                    ProductWeeklySalesResponse response = resultMap.computeIfAbsent(productId, id -> {
+                        ProductWeeklySalesResponse r = new ProductWeeklySalesResponse();
+                        r.setProductId(id);
+                        r.setProductName(detail.getProduct().getProductName());
+                        r.setDailySales(new HashMap<>());
+                        return r;
+                    });
+
+                    Map<String, Integer> dailySales = response.getDailySales();
+                    dailySales.put(dayName, dailySales.getOrDefault(dayName, 0) + detail.getQuantity());
+                }
+            }
+        }
+
+        return new ArrayList<>(resultMap.values());
     }
 
     // Normally this method is not used.

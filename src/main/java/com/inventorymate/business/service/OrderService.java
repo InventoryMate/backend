@@ -1,15 +1,17 @@
 package com.inventorymate.business.service;
 
-import com.inventorymate.business.Dto.OrderRequest;
-import com.inventorymate.business.Dto.OrderResponse;
+import com.inventorymate.business.dto.OrderRequest;
+import com.inventorymate.business.dto.OrderResponse;
+import com.inventorymate.business.dto.ProductWeeklySalesResponse;
 import com.inventorymate.business.model.Order;
 
 import java.util.List;
 
 public interface OrderService {
-    OrderResponse createOrder(OrderRequest orderRequests);
-    public List<Order> getAllOrders();
-    public Order getOrderById(Long orderId);
-    public Order updateOrder(OrderRequest order, Long orderId);
-    public void deleteOrder(Long orderId);
+    OrderResponse createOrder(OrderRequest orderRequests, Long storeId);
+    public List<OrderResponse> getAllOrders(Long storeId);
+    public OrderResponse getOrderById(Long orderId, Long storeId);
+    public OrderResponse updateOrder(OrderRequest order, Long orderId, Long storeId);
+    public void deleteOrder(Long orderId, Long storeId);
+    public List<ProductWeeklySalesResponse> getWeeklySalesForProducts(List<Long> productId, Long storeId);
 }

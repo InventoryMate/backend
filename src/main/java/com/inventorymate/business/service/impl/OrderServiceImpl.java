@@ -1,9 +1,6 @@
 package com.inventorymate.business.service.impl;
 
-import com.inventorymate.business.Dto.OrderDetailRequest;
-import com.inventorymate.business.Dto.OrderDetailResponse;
-import com.inventorymate.business.Dto.OrderRequest;
-import com.inventorymate.business.Dto.OrderResponse;
+import com.inventorymate.business.dto.*;
 import com.inventorymate.business.model.Order;
 import com.inventorymate.business.model.OrderDetail;
 import com.inventorymate.business.model.Product;
@@ -14,13 +11,16 @@ import com.inventorymate.business.repository.StockRepository;
 import com.inventorymate.business.service.OrderService;
 import com.inventorymate.exception.ResourceNotFoundException;
 import com.inventorymate.exception.ValidationException;
+import com.inventorymate.user.model.Store;
+import com.inventorymate.user.repository.StoreRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.time.format.TextStyle;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -28,23 +28,33 @@ public class OrderServiceImpl implements OrderService {
     private OrderRepository orderRepository;
     private StockRepository stockRepository;
     private ProductRepository productRepository;
+    private StoreRepository storeRepository;
 
-    public OrderServiceImpl(OrderRepository orderRepository, StockRepository stockRepository, ProductRepository productRepository) {
+    public OrderServiceImpl(OrderRepository orderRepository,
+                            StockRepository stockRepository,
+                            ProductRepository productRepository,
+                            StoreRepository storeRepository) {
         this.orderRepository = orderRepository;
         this.stockRepository = stockRepository;
         this.productRepository = productRepository;
+        this.storeRepository = storeRepository;
     }
 
 
     @Transactional
     @Override
-    public OrderResponse createOrder(OrderRequest orderRequestDTO) {
+    public OrderResponse createOrder(OrderRequest orderRequestDTO, Long storeId) {
         // Validate the order request
         validateOrderRequest(orderRequestDTO);
 
         // Create a new order
         Order newOrder = new Order();
         newOrder.setOrderDate(LocalDateTime.now());
+
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Store not found"));
+
+        newOrder.setStore(store);
 
         List<OrderDetail> orderDetails = new ArrayList<>();
         List<String> insufficientStockProducts = new ArrayList<>();
@@ -55,12 +65,12 @@ public class OrderServiceImpl implements OrderService {
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
             // Get available stock sorted by purchase date (FIFO strategy)
-            List<Stock> stocks = stockRepository.findByProductIdOrderByPurchaseDateAsc(product.getId())
+            List<Stock> stocks = stockRepository.findByProductIdAndStore_IdOrderByPurchaseDateAsc(product.getId(), storeId)
                     .stream()
                     .filter(stock -> !stock.isExpired()) // Ignore expired stock
                     .toList();
 
-            int remainingQuantity = orderDetailRequest.getQuantity();
+            long remainingQuantity = orderDetailRequest.getQuantity();
             Iterator<Stock> stockIterator = stocks.iterator();
 
             while (remainingQuantity > 0 && stockIterator.hasNext()) {
@@ -109,32 +119,72 @@ public class OrderServiceImpl implements OrderService {
 
         Order savedOrder = orderRepository.save(newOrder);
         return mapToOrderResponse(savedOrder); // ✅
+    }
 
+
+    @Override
+    public List<OrderResponse> getAllOrders(Long storeId) {
+        return orderRepository.findByStore_Id(storeId)
+                .stream()
+                .map(this::mapToOrderResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public List<Order> getAllOrders() {
-        return orderRepository.findAll();
+    public OrderResponse getOrderById(Long orderId, Long storeId) {
+        Order order = orderRepository.findByIdAndStore_Id(orderId, storeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order with ID " + orderId + " not found in this store"));
+        return mapToOrderResponse(order);
     }
 
+
     @Override
-    public Order getOrderById(Long orderId) {
-        return orderRepository.findById(orderId).orElse(null);
+    public List<ProductWeeklySalesResponse> getWeeklySalesForProducts(List<Long> productIds, Long storeId) {
+        LocalDateTime endDate = LocalDateTime.now();
+        LocalDateTime startDate = endDate.minusDays(6); // últimos 7 días incluyendo hoy
+
+        List<Order> orders = orderRepository.findByStore_IdAndOrderDateBetween(storeId, startDate, endDate);
+
+        Map<Long, ProductWeeklySalesResponse> resultMap = new HashMap<>();
+
+        for (Order order : orders) {
+            DayOfWeek day = order.getOrderDate().getDayOfWeek();
+            String dayName = day.getDisplayName(TextStyle.FULL, new Locale("es", "ES")); // "Lunes", "Martes", etc.
+
+            for (OrderDetail detail : order.getOrderDetails()) {
+                Long productId = detail.getProduct().getId();
+                if (productIds.contains(productId)) {
+                    ProductWeeklySalesResponse response = resultMap.computeIfAbsent(productId, id -> {
+                        ProductWeeklySalesResponse r = new ProductWeeklySalesResponse();
+                        r.setProductId(id);
+                        r.setProductName(detail.getProduct().getProductName());
+                        r.setDailySales(new HashMap<>());
+                        return r;
+                    });
+
+                    Map<String, Integer> dailySales = response.getDailySales();
+                    dailySales.put(dayName, dailySales.getOrDefault(dayName, 0) + detail.getQuantity());
+                }
+            }
+        }
+
+        return new ArrayList<>(resultMap.values());
     }
 
     // Normally this method is not used.
     @Transactional
     @Override
-    public Order updateOrder(OrderRequest order, Long orderId) {
+    public OrderResponse updateOrder(OrderRequest order, Long orderId, Long storeId) {
         return null;
     }
 
     @Override
-    public void deleteOrder(Long orderId) {
-        if (!orderRepository.existsById(orderId)) {
-            throw new ResourceNotFoundException("Order with Id " + orderId + " not found");
-        }
-        orderRepository.deleteById(orderId);
+    @Transactional
+    public void deleteOrder(Long orderId, Long storeId) {
+        Order order = orderRepository.findByIdAndStore_Id(orderId, storeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        orderRepository.delete(order);
     }
 
     private void validateOrderRequest(OrderRequest orderRequest) {
@@ -166,7 +216,7 @@ public class OrderServiceImpl implements OrderService {
             detailResponse.setQuantity(detail.getQuantity());
             detailResponse.setSubtotalPrice(detail.getSubtotalPrice());
             return detailResponse;
-        }).toList();
+        }).collect(Collectors.toList());
 
         response.setOrderDetails(detailResponses);
         return response;

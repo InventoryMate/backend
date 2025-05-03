@@ -1,6 +1,6 @@
 package com.inventorymate.business.service.impl;
 
-import com.inventorymate.business.Dto.ProductRequest;
+import com.inventorymate.business.dto.ProductRequest;
 import com.inventorymate.business.model.Product;
 import com.inventorymate.business.repository.CategoryRepository;
 import com.inventorymate.business.repository.ProductRepository;
@@ -8,7 +8,10 @@ import com.inventorymate.business.repository.StockRepository;
 import com.inventorymate.business.service.ProductService;
 import com.inventorymate.exception.ResourceNotFoundException;
 import com.inventorymate.exception.ValidationException;
+import com.inventorymate.user.model.Store;
+import com.inventorymate.user.repository.StoreRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -18,55 +21,63 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final StockRepository stockRepository;
+    private final StoreRepository storeRepository;
 
     public ProductServiceImpl(ProductRepository productRepository,
                               CategoryRepository categoryRepository,
-                              StockRepository stockRepository) {
+                              StockRepository stockRepository,
+                              StoreRepository storeRepository) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
         this.stockRepository = stockRepository;
+        this.storeRepository = storeRepository;
     }
 
     @Override
-    public List<Product> getAllProducts() {
-        return productRepository.findAll();
+    public List<Product> getAllProducts(Long storeId) {
+        return productRepository.findByStore_Id(storeId);
     }
 
     @Override
-    public Product getProductById(Long productId) {
-        return productRepository.findById(productId).orElse(null);
+    public Product getProductById(Long productId, Long storeId) {
+        return productRepository.findByIdAndStore_Id(productId, storeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product with ID " + productId + " not found in this store"));
     }
 
     @Override
-    public Product saveProduct(ProductRequest product) {
-        return createOrUpdateProduct(product, new Product(), null);
+    @Transactional
+    public Product saveProduct(ProductRequest product, Long storeId) {
+        return createOrUpdateProduct(product, new Product(), null, storeId);
     }
 
     @Override
-    public Product updateProduct(ProductRequest productRequest, Long productId) {
-        Product productToUpdate = getProductById(productId); // Ya maneja ResourceNotFoundException
-        return createOrUpdateProduct(productRequest, productToUpdate, productId);
+    @Transactional
+    public Product updateProduct(ProductRequest productRequest, Long productId, Long storeId) {
+        Product productToUpdate = getProductById(productId, storeId);
+        return createOrUpdateProduct(productRequest, productToUpdate, productId, storeId);
     }
 
     @Override
-    public void deleteProduct(Long productId) {
-        if (productRepository.existsById(productId)) {
-            productRepository.deleteById(productId);
-        }
+    @Transactional
+    public void deleteProduct(Long productId, Long storeId) {
+        Product product = productRepository.findByIdAndStore_Id(productId, storeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+
+        productRepository.delete(product);
     }
 
-    private Product createOrUpdateProduct(ProductRequest productRequest, Product product, Long productId) {
+    private Product createOrUpdateProduct(ProductRequest productRequest, Product product, Long productId, Long storeId) {
         if (productRequest.getCategoryId() == 0) {
             product.setCategory(null);
         } else {
-            product.setCategory(categoryRepository.findById(productRequest.getCategoryId()).orElseThrow(
+            product.setCategory(categoryRepository.findByIdAndStore_Id(productRequest.getCategoryId(), storeId).orElseThrow(
                     () -> new ValidationException("Product category does not exist.")
             ));
         }
 
         // Validate if unit type is changing
         if (productId != null) { // Only check if it's an update
-            Product existingProduct = productRepository.findById(productId)
+            Product existingProduct = productRepository.findByIdAndStore_Id(productId, storeId)
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
             if (!existingProduct.getUnitType().equals(productRequest.getUnitType())) {
@@ -75,41 +86,46 @@ public class ProductServiceImpl implements ProductService {
             }
         }
 
+        Store store = storeRepository.findById(storeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Store not found"));
+
+        product.setStore(store);
+
         product.setProductName(productRequest.getProductName());
         product.setProductDescription(productRequest.getProductDescription());
         product.setProductPrice(productRequest.getProductPrice());
         product.setExpirable(productRequest.isExpirable());
-        product.setUnitType(productRequest.getUnitType()); // This is now safe
+        product.setUnitType(productRequest.getUnitType());
 
-        validateProduct(product, productId);
+        validateProduct(product, productId, storeId);
 
         return productRepository.save(product);
     }
 
     @Override
-    public List<Product> getProductsByCategory(Long categoryId) {
+    public List<Product> getProductsByCategory(Long categoryId, Long storeId) {
         if (categoryId == 0) {
-            return productRepository.findByCategoryIsNull();
+            return productRepository.findByCategoryIsNullAndStore_Id(storeId);
         }
-        return productRepository.findByCategoryId(categoryId);
+        return productRepository.findByCategoryIdAndStore_Id(categoryId, storeId);
     }
 
     @Override
-    public Long getTotalStockByProductId(Long productId) {
-        if (!productRepository.existsById(productId)) {
+    public Long getTotalStockByProductId(Long productId, Long storeId) {
+        if (!productRepository.existsByIdAndStore_Id(productId, storeId)) {
             throw new ResourceNotFoundException("Product with ID " + productId + " not found.");
         }
 
-        Long total = stockRepository.getAvailableStockByProductId(productId);
+        Long total = stockRepository.getAvailableStockByProductIdAndStoreId(productId, storeId);
         return total != null ? total : 0L;
     }
 
     @Override
-    public boolean existsByProductName(String productName) {
-        return productRepository.existsByProductNameIgnoreCase(productName);
+    public boolean existsByProductName(String productName, Long storeId) {
+        return productRepository.existsByProductNameIgnoreCaseAndStore_Id(productName, storeId);
     }
 
-    private void validateProduct(Product product, Long productId) {
+    private void validateProduct(Product product, Long productId, Long storeId) {
         if (product.getProductName() == null || product.getProductName().trim().isEmpty()) {
             throw new ValidationException("Product name is required.");
         }
@@ -127,7 +143,7 @@ public class ProductServiceImpl implements ProductService {
         }
 
         // Validate product name uniqueness
-        Product existingProduct = productRepository.findByProductNameIgnoreCase(product.getProductName());
+        Product existingProduct = productRepository.findByProductNameIgnoreCaseAndStore_Id(product.getProductName(), storeId);
         if (existingProduct != null && (productId == null || !existingProduct.getId().equals(productId))) {
             throw new ValidationException("Product name already exists.");
         }
@@ -141,7 +157,7 @@ public class ProductServiceImpl implements ProductService {
         }
 
         // Validate category
-        if (product.getCategory() != null && !categoryRepository.existsById(product.getCategory().getId())) {
+        if (product.getCategory() != null && !categoryRepository.existsByIdAndStore_Id(product.getCategory().getId(), storeId)) {
             throw new ValidationException("Product category does not exist.");
         }
     }

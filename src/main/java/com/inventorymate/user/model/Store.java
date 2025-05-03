@@ -1,5 +1,6 @@
 package com.inventorymate.user.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.inventorymate.business.model.Category;
 import com.inventorymate.business.model.Order;
 import com.inventorymate.business.model.Product;
@@ -14,6 +15,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 @Data
 @Builder
@@ -35,12 +37,24 @@ public class Store implements UserDetails {
     @Column(name = "password", nullable = false, length = 255)
     private String password;
 
-    /*
+    // Relationships
+
+    @OneToMany(mappedBy = "store", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonManagedReference
     private List<Product> products;
-    private List<Order> orders;
-    private List<Stock> stocks;
+
+    @OneToMany(mappedBy = "store", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonManagedReference
     private List<Category> categories;
-     */
+
+    @OneToMany(mappedBy = "store", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonManagedReference
+    private List<Order> orders;
+
+    @OneToMany(mappedBy = "store", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonManagedReference
+    private List<Stock> stocks;
+
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

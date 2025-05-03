@@ -1,6 +1,7 @@
 package com.inventorymate.business.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.inventorymate.user.model.Store;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -24,7 +25,7 @@ public class Stock {
     private Product product;
 
     @Column(name = "quantity", nullable = false)
-    private int quantity;
+    private Long quantity;
 
     @Temporal(TemporalType.DATE)
     @Column(name = "purchase_date", nullable = false)
@@ -34,11 +35,16 @@ public class Stock {
     @Column(name = "expiration_date")
     private LocalDate expirationDate;
 
+    @ManyToOne
+    @JoinColumn(name = "store_id", referencedColumnName = "id", nullable = false)
+    @JsonBackReference
+    private Store store;
+
     public boolean isExpired() {
         return expirationDate != null && expirationDate.isBefore(LocalDate.now());
     }
 
-    public void consumeStock(int quantity) {
+    public void consumeStock(Long quantity) {
         if (this.quantity >= quantity) {
             this.quantity -= quantity;
         } else {
@@ -46,5 +52,3 @@ public class Stock {
         }
     }
 }
-
-

@@ -20,9 +20,12 @@ public class JwtService {
     @Value("${application.security.jwt.secret-key}")
     private String secretKey;
 
-    public String getToken(UserDetails user) {
-        return getToken(new HashMap<>(), user);
+    public String getToken(UserDetails user, Long storeId) {
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("storeId", storeId);
+        return getToken(extraClaims, user);
     }
+
 
     private String getToken(Map<String, Object> extraClaims, UserDetails user) {
         return Jwts
@@ -33,6 +36,10 @@ public class JwtService {
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24))
                 .signWith(getKey(), SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    public Long extractStoreId(String token) {
+        return getClaim(token, claims -> claims.get("storeId", Long.class));
     }
 
     private Key getKey() {

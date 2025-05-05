@@ -14,10 +14,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.TextStyle;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -135,36 +138,58 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<ProductWeeklySalesResponse> getWeeklySalesForProducts(List<Long> productIds, Long storeId) {
-        LocalDateTime endDate = LocalDateTime.now();
-        LocalDateTime startDate = endDate.minusDays(6); // últimos 7 días incluyendo hoy
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = today.minusDays(6);
 
-        List<Order> orders = orderRepository.findByStore_IdAndOrderDateBetween(storeId, startDate, endDate);
+        // Generate las 7 days in a List (ex: 2025-04-27, ..., 2025-05-03)
+        List<LocalDate> last7Days = IntStream.rangeClosed(0, 6)
+                .mapToObj(i -> startDate.plusDays(i))
+                .toList();
+
+        // Get all Orders between the dates
+        List<Order> orders = orderRepository.findByStore_IdAndOrderDateBetween(
+                storeId,
+                startDate.atStartOfDay(),
+                today.atTime(LocalTime.MAX)
+        );
 
         Map<Long, ProductWeeklySalesResponse> resultMap = new HashMap<>();
 
+        // Initialize the map with all days with 0.0
+        for (Long productId : productIds) {
+            Product product = productRepository.findById(productId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
+
+            Map<String, Double> dailySales = new LinkedHashMap<>();
+            for (LocalDate date : last7Days) {
+                String dayName = date.getDayOfWeek().getDisplayName(TextStyle.FULL, new Locale("es", "ES"));
+                dailySales.put(dayName, 0.0);
+            }
+
+            ProductWeeklySalesResponse response = new ProductWeeklySalesResponse();
+            response.setProductId(productId);
+            response.setProductName(product.getProductName());
+            response.setDailySales(dailySales);
+
+            resultMap.put(productId, response);
+        }
+
         for (Order order : orders) {
-            DayOfWeek day = order.getOrderDate().getDayOfWeek();
-            String dayName = day.getDisplayName(TextStyle.FULL, new Locale("es", "ES")); // "Lunes", "Martes", etc.
+            LocalDate orderDate = order.getOrderDate().toLocalDate();
+            String dayName = orderDate.getDayOfWeek().getDisplayName(TextStyle.FULL, new Locale("es", "ES"));
 
             for (OrderDetail detail : order.getOrderDetails()) {
                 Long productId = detail.getProduct().getId();
-                if (productIds.contains(productId)) {
-                    ProductWeeklySalesResponse response = resultMap.computeIfAbsent(productId, id -> {
-                        ProductWeeklySalesResponse r = new ProductWeeklySalesResponse();
-                        r.setProductId(id);
-                        r.setProductName(detail.getProduct().getProductName());
-                        r.setDailySales(new HashMap<>());
-                        return r;
-                    });
-
-                    Map<String, Double> dailySales = response.getDailySales();
-                    dailySales.put(dayName, dailySales.getOrDefault(dayName, 0.0) + detail.getQuantity());
+                if (resultMap.containsKey(productId)) {
+                    Map<String, Double> dailySales = resultMap.get(productId).getDailySales();
+                    dailySales.put(dayName, dailySales.get(dayName) + detail.getQuantity());
                 }
             }
         }
 
         return new ArrayList<>(resultMap.values());
     }
+
 
     // Normally this method is not used.
     @Transactional

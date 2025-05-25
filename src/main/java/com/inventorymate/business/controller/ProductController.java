@@ -15,8 +15,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-
-//CHANGE REQUEST MAPPING TO /api/InventoryMate/v1
 @RestController
 @RequestMapping("/api/InventoryMate/v1/products")
 public class ProductController {

@@ -2,7 +2,6 @@ package com.inventorymate.business.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.inventorymate.ai.model.ProductPredictionSetting;
 import com.inventorymate.user.model.Store;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

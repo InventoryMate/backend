@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class PredictionServiceImpl implements PredictionService {
@@ -26,32 +27,40 @@ public class PredictionServiceImpl implements PredictionService {
     }
 
     public PredictionResponse getPrediction(Long storeId, int predictionDays) {
-        // Calcular la estación y la fecha (puedes usar una librería de fechas para esto)
         String season = calculateSeason();
-        String date = LocalDate.now().toString(); // Fecha actual
+        String date = LocalDate.now().toString();
 
+        System.out.println("Store Id: " + storeId);
+        System.out.println("Prediction Days : " + predictionDays);
         List<Product> productsToPredict = productRepository.findByStore_IdAndAssignedForPrediction(storeId, true);
+
+        System.out.println("Luego de products To Predict");
 
         List<ProductPredictionDetails> productDetailsList = new ArrayList<>();
         for (Product product : productsToPredict) {
             ProductPredictionDetails productDetails = new ProductPredictionDetails();
             productDetails.setProductId(product.getId());
             productDetails.setWeeklySales(product.getWeeklySalesEstimation());
+            productDetails.setPrice(product.getProductPrice());
+            productDetails.setCategoryId(product.getCategory().getId()); // ⚠️ Asegúrate de que Category no sea NULL!!!
+
             productDetailsList.add(productDetails);
         }
 
-        // Crear el request de predicción con la lista de productos, estación y fecha
+        System.out.println("Luego de products productDetailsList");
+
         PredictionRequest predictionRequest = new PredictionRequest();
         predictionRequest.setStoreId(storeId);
         predictionRequest.setPredictionDays(predictionDays);
         predictionRequest.setSeason(season);
-        predictionRequest.setDate(date);  // Puedes agregar la fecha si es relevante
-
+        predictionRequest.setDate(date);
         predictionRequest.setProducts(productDetailsList);
 
-        // Realizar la solicitud al cliente de Azure para obtener la predicción
+        System.out.println("Luego de products predictionRequest");
+
         return azurePredictionClient.fetchPredictionFromAzure(predictionRequest);
     }
+
 
     private String calculateSeason() {
         // Lógica para determinar la estación del año basado en la fecha actual

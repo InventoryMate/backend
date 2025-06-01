@@ -154,7 +154,8 @@ public class OrderServiceImpl implements OrderService {
         );
 
         // Obtener productos asignados para predicción
-        List<Product> productsToPredict = productRepository.findByStore_IdAndAssignedForPrediction(storeId, true);
+        // List<Product> productsToPredict = productRepository.findByStore_IdAndAssignedForPrediction(storeId, true);
+        List<Product> productsToPredict = productRepository.findByStore_Id(storeId);
 
         Map<Long, ProductWeeklySalesResponse> resultMap = new HashMap<>();
 

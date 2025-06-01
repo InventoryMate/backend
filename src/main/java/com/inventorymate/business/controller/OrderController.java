@@ -68,10 +68,9 @@ public class OrderController {
     @Transactional
     @PostMapping("/weekly-sales")
     public ResponseEntity<List<ProductWeeklySalesResponse>> getWeeklySales(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestBody ProductSalesRequest request) {
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        List<ProductWeeklySalesResponse> sales = orderService.getWeeklySalesForProducts(request.getProductIds(), userDetails.getStoreId());
+        List<ProductWeeklySalesResponse> sales = orderService.getWeeklySalesForProducts(userDetails.getStoreId());
         return ResponseEntity.ok(sales);
     }
 

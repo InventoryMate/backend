@@ -13,5 +13,5 @@ public interface OrderService {
     public OrderResponse getOrderById(Long orderId, Long storeId);
     public OrderResponse updateOrder(OrderRequest order, Long orderId, Long storeId);
     public void deleteOrder(Long orderId, Long storeId);
-    public List<ProductWeeklySalesResponse> getWeeklySalesForProducts(List<Long> productId, Long storeId);
+    public List<ProductWeeklySalesResponse> getWeeklySalesForProducts(Long storeId);
 }

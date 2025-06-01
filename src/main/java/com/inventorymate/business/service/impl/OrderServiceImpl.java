@@ -137,29 +137,29 @@ public class OrderServiceImpl implements OrderService {
 
 
     @Override
-    public List<ProductWeeklySalesResponse> getWeeklySalesForProducts(List<Long> productIds, Long storeId) {
+    public List<ProductWeeklySalesResponse> getWeeklySalesForProducts(Long storeId) {
         LocalDate today = LocalDate.now();
         LocalDate startDate = today.minusDays(6);
 
-        // Generate las 7 days in a List (ex: 2025-04-27, ..., 2025-05-03)
+        // Generar los últimos 7 días
         List<LocalDate> last7Days = IntStream.rangeClosed(0, 6)
                 .mapToObj(i -> startDate.plusDays(i))
                 .toList();
 
-        // Get all Orders between the dates
+        // Obtener todos los pedidos dentro del rango de fechas
         List<Order> orders = orderRepository.findByStore_IdAndOrderDateBetween(
                 storeId,
                 startDate.atStartOfDay(),
                 today.atTime(LocalTime.MAX)
         );
 
+        // Obtener productos asignados para predicción
+        List<Product> productsToPredict = productRepository.findByStore_IdAndAssignedForPrediction(storeId, true);
+
         Map<Long, ProductWeeklySalesResponse> resultMap = new HashMap<>();
 
-        // Initialize the map with all days with 0.0
-        for (Long productId : productIds) {
-            Product product = productRepository.findById(productId)
-                    .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
-
+        // Inicializar el mapa con todos los días en 0.0
+        for (Product product : productsToPredict) {
             Map<String, Double> dailySales = new LinkedHashMap<>();
             for (LocalDate date : last7Days) {
                 String dayName = date.getDayOfWeek().getDisplayName(TextStyle.FULL, new Locale("es", "ES"));
@@ -167,13 +167,14 @@ public class OrderServiceImpl implements OrderService {
             }
 
             ProductWeeklySalesResponse response = new ProductWeeklySalesResponse();
-            response.setProductId(productId);
+            response.setProductId(product.getId());
             response.setProductName(product.getProductName());
             response.setDailySales(dailySales);
 
-            resultMap.put(productId, response);
+            resultMap.put(product.getId(), response);
         }
 
+        // Acumular ventas por día
         for (Order order : orders) {
             LocalDate orderDate = order.getOrderDate().toLocalDate();
             String dayName = orderDate.getDayOfWeek().getDisplayName(TextStyle.FULL, new Locale("es", "ES"));
@@ -189,6 +190,7 @@ public class OrderServiceImpl implements OrderService {
 
         return new ArrayList<>(resultMap.values());
     }
+
 
 
     // Normally this method is not used.

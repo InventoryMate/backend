@@ -13,7 +13,7 @@ public class PredictionResponse {
     @Data
     public static class PredictionResult {
         @JsonProperty("product_id")
-        private Long productId;
+        private String productName;
 
         @JsonProperty("predicted_total")
         private double predictedDemand;

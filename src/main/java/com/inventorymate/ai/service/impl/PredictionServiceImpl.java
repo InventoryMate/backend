@@ -39,7 +39,7 @@ public class PredictionServiceImpl implements PredictionService {
         List<ProductPredictionDetails> productDetailsList = new ArrayList<>();
         for (Product product : productsToPredict) {
             ProductPredictionDetails productDetails = new ProductPredictionDetails();
-            productDetails.setProductId(product.getId());
+            productDetails.setProductName(product.getProductName());
             productDetails.setWeeklySales(product.getWeeklySalesEstimation());
             productDetails.setPrice(product.getProductPrice());
             productDetails.setCategoryId(product.getCategory().getId()); // ⚠️ Asegúrate de que Category no sea NULL!!!

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 @Data
 public class ProductPredictionDetails {
-    private Long productId;
+    private String productName;
     private double weeklySales;
     private double price;
     private Long categoryId;

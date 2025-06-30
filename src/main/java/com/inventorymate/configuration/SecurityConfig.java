@@ -69,7 +69,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:4200")); // Permitir el frontend en Angular
+        configuration.setAllowedOrigins(List.of("http://localhost:4200", "https://inventorymate.netlify.app")); // Permitir el frontend en Angular
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")); // Métodos permitidos
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type")); // Headers permitidos
         configuration.setAllowCredentials(true);

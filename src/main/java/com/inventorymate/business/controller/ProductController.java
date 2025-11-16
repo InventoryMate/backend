@@ -1,7 +1,9 @@
 package com.inventorymate.business.controller;
 
+import com.inventorymate.business.dto.CategoryResponse;
 import com.inventorymate.business.dto.ProductRequest;
 import com.inventorymate.business.model.Product;
+import com.inventorymate.business.model.UnitType;
 import com.inventorymate.business.service.ProductService;
 import com.inventorymate.exception.ResourceNotFoundException;
 import com.inventorymate.exception.ValidationException;
@@ -99,6 +101,18 @@ public class ProductController {
     @GetMapping("/{productId}/stocks-total")
     public ResponseEntity<Long> getTotalStockByProductId(@AuthenticationPrincipal CustomUserDetails userDetails, @PathVariable(name = "productId") Long productId) {
         return ResponseEntity.ok(productService.getTotalStockByProductId(productId, userDetails.getStoreId()));
+    }
+
+    @GetMapping("/units")
+    public ResponseEntity<List<UnitType>> getUnitTypes(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        List<UnitType> unitTypes = productService.getExistingUnitTypes(userDetails.getStoreId());
+        return unitTypes.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(unitTypes);
+    }
+
+    @GetMapping("/categories")
+    public ResponseEntity<List<CategoryResponse>> getCategories(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        List<CategoryResponse> categories = productService.getExistingCategories(userDetails.getStoreId());
+        return categories.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(categories);
     }
 
     // Global Exception Handling for Not Found & Validation Exceptions

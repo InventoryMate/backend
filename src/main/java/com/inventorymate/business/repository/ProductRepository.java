@@ -1,6 +1,7 @@
 package com.inventorymate.business.repository;
 
 import com.inventorymate.business.model.Product;
+import com.inventorymate.business.model.UnitType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -24,4 +25,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @Modifying
     @Query("UPDATE Product p SET p.category = NULL WHERE p.category.id = :categoryId")
     void updateCategoryToNull(@Param("categoryId") Long categoryId);
+
+    @Query("SELECT DISTINCT p.unitType FROM Product p WHERE p.store.id = :storeId AND p.isDeleted = false")
+    List<UnitType> findDistinctUnitTypesByStoreId(Long storeId);
+
+    @Query("SELECT DISTINCT p.category.id, p.category.categoryName FROM Product p WHERE p.store.id = :storeId AND p.isDeleted = false AND p.category IS NOT NULL")
+    List<Object[]> findDistinctCategoriesByStoreId(Long storeId);
+
 }

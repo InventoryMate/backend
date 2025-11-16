@@ -1,7 +1,9 @@
 package com.inventorymate.business.service;
 
+import com.inventorymate.business.dto.CategoryResponse;
 import com.inventorymate.business.dto.ProductRequest;
 import com.inventorymate.business.model.Product;
+import com.inventorymate.business.model.UnitType;
 
 import java.util.List;
 
@@ -14,4 +16,6 @@ public interface ProductService {
     public boolean existsByProductName(String productName, Long storeId);
     public List<Product> getProductsByCategory(Long categoryId, Long storeId);
     public Long getTotalStockByProductId(Long productId, Long storeId);
+    List<UnitType> getExistingUnitTypes(Long storeId);
+    List<CategoryResponse> getExistingCategories(Long storeId);
 }

@@ -1,7 +1,9 @@
 package com.inventorymate.business.service.impl;
 
+import com.inventorymate.business.dto.CategoryResponse;
 import com.inventorymate.business.dto.ProductRequest;
 import com.inventorymate.business.model.Product;
+import com.inventorymate.business.model.UnitType;
 import com.inventorymate.business.repository.CategoryRepository;
 import com.inventorymate.business.repository.ProductRepository;
 import com.inventorymate.business.repository.StockRepository;
@@ -124,6 +126,19 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public boolean existsByProductName(String productName, Long storeId) {
         return productRepository.existsByProductNameIgnoreCaseAndStore_IdAndIsDeletedFalse(productName, storeId);
+    }
+
+    @Override
+    public List<UnitType> getExistingUnitTypes(Long storeId) {
+        return productRepository.findDistinctUnitTypesByStoreId(storeId);
+    }
+
+    @Override
+    public List<CategoryResponse> getExistingCategories(Long storeId) {
+        List<Object[]> results = productRepository.findDistinctCategoriesByStoreId(storeId);
+        return results.stream()
+                .map(obj -> new CategoryResponse((Long) obj[0], (String) obj[1]))
+                .toList();
     }
 
     private void validateProduct(Product product, Long productId, Long storeId) {

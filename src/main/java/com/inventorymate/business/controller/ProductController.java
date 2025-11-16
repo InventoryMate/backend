@@ -103,13 +103,13 @@ public class ProductController {
         return ResponseEntity.ok(productService.getTotalStockByProductId(productId, userDetails.getStoreId()));
     }
 
-    @GetMapping("/units")
+    @GetMapping("/filter/units")
     public ResponseEntity<List<UnitType>> getUnitTypes(@AuthenticationPrincipal CustomUserDetails userDetails) {
         List<UnitType> unitTypes = productService.getExistingUnitTypes(userDetails.getStoreId());
         return unitTypes.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(unitTypes);
     }
 
-    @GetMapping("/categories")
+    @GetMapping("/filter/categories")
     public ResponseEntity<List<CategoryResponse>> getCategories(@AuthenticationPrincipal CustomUserDetails userDetails) {
         List<CategoryResponse> categories = productService.getExistingCategories(userDetails.getStoreId());
         return categories.isEmpty() ? ResponseEntity.noContent().build() : ResponseEntity.ok(categories);

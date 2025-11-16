@@ -40,7 +40,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Product getProductById(Long productId, Long storeId) {
-        return productRepository.findByIdAndStore_Id(productId, storeId)
+        return productRepository.findByIdAndStore_IdAndIsDeletedFalse(productId, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product with ID " + productId + " not found in this store"));
     }
 
@@ -60,10 +60,11 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public void deleteProduct(Long productId, Long storeId) {
-        Product product = productRepository.findByIdAndStore_Id(productId, storeId)
+        Product product = productRepository.findByIdAndStore_IdAndIsDeletedFalse(productId, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
-        productRepository.delete(product);
+        product.setDeleted(true);
+        productRepository.save(product);
     }
 
     private Product createOrUpdateProduct(ProductRequest productRequest, Product product, Long productId, Long storeId) {
@@ -77,7 +78,7 @@ public class ProductServiceImpl implements ProductService {
 
         // Validate if unit type is changing
         if (productId != null) { // Only check if it's an update
-            Product existingProduct = productRepository.findByIdAndStore_Id(productId, storeId)
+            Product existingProduct = productRepository.findByIdAndStore_IdAndIsDeletedFalse(productId, storeId)
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
             if (!existingProduct.getUnitType().equals(productRequest.getUnitType())) {
@@ -105,14 +106,14 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public List<Product> getProductsByCategory(Long categoryId, Long storeId) {
         if (categoryId == 0) {
-            return productRepository.findByCategoryIsNullAndStore_Id(storeId);
+            return productRepository.findByCategoryIsNullAndStore_IdAndIsDeletedFalse(storeId);
         }
-        return productRepository.findByCategoryIdAndStore_Id(categoryId, storeId);
+        return productRepository.findByCategoryIdAndStore_IdAndIsDeletedFalse(categoryId, storeId);
     }
 
     @Override
     public Long getTotalStockByProductId(Long productId, Long storeId) {
-        if (!productRepository.existsByIdAndStore_Id(productId, storeId)) {
+        if (!productRepository.existsByIdAndStore_IdAndIsDeletedFalse(productId, storeId)) {
             throw new ResourceNotFoundException("Product with ID " + productId + " not found.");
         }
 
@@ -122,7 +123,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public boolean existsByProductName(String productName, Long storeId) {
-        return productRepository.existsByProductNameIgnoreCaseAndStore_Id(productName, storeId);
+        return productRepository.existsByProductNameIgnoreCaseAndStore_IdAndIsDeletedFalse(productName, storeId);
     }
 
     private void validateProduct(Product product, Long productId, Long storeId) {
@@ -143,7 +144,7 @@ public class ProductServiceImpl implements ProductService {
         }
 
         // Validate product name uniqueness
-        Product existingProduct = productRepository.findByProductNameIgnoreCaseAndStore_Id(product.getProductName(), storeId);
+        Product existingProduct = productRepository.findByProductNameIgnoreCaseAndStore_IdAndIsDeletedFalse(product.getProductName(), storeId);
         if (existingProduct != null && (productId == null || !existingProduct.getId().equals(productId))) {
             throw new ValidationException("Product name already exists.");
         }

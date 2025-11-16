@@ -18,7 +18,7 @@ public class ProductPredictionServiceImpl implements ProductPredictionService {
     @Transactional
     @Override
     public void assignProductForPrediction(Long productId, Long storeId, double weeklySales) {
-        Product product = productRepository.findByIdAndStore_Id(productId, storeId)
+        Product product = productRepository.findByIdAndStore_IdAndIsDeletedFalse(productId, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
         product.setWeeklySalesEstimation(weeklySales);
@@ -29,7 +29,7 @@ public class ProductPredictionServiceImpl implements ProductPredictionService {
     @Transactional
     @Override
     public void unassignProductForPrediction(Long productId, Long storeId) {
-        Product product = productRepository.findByIdAndStore_Id(productId, storeId)
+        Product product = productRepository.findByIdAndStore_IdAndIsDeletedFalse(productId, storeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
         product.setAssignedForPrediction(false);

@@ -54,4 +54,7 @@ public class Product {
 
     @Column(name = "assigned_for_prediction")
     private boolean assignedForPrediction;
+
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
 }

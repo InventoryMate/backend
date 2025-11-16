@@ -59,8 +59,10 @@ public class OrderServiceImpl implements OrderService {
         double total = 0.0;
 
         for (OrderDetailRequest request : orderRequestDTO.getOrderDetails()) {
-            Product product = productRepository.findById(request.getProductId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+            Product product = productRepository.findByIdAndStore_IdAndIsDeletedFalse(
+                    request.getProductId(),
+                    storeId
+            ).orElseThrow(() -> new ResourceNotFoundException("Product not found or deleted"));
 
             // Convertir la cantidad solicitada a la unidad del producto
             double quantityInProductUnit = convertToProductUnit(product, request.getUnitType(), request.getQuantity());
@@ -118,8 +120,6 @@ public class OrderServiceImpl implements OrderService {
         return mapToOrderResponse(savedOrder);
     }
 
-
-
     @Override
     public List<OrderResponse> getAllOrders(Long storeId) {
         return orderRepository.findByStore_Id(storeId)
@@ -155,7 +155,7 @@ public class OrderServiceImpl implements OrderService {
 
         // Obtener productos asignados para predicción
         // List<Product> productsToPredict = productRepository.findByStore_IdAndAssignedForPrediction(storeId, true);
-        List<Product> productsToPredict = productRepository.findByStore_Id(storeId);
+        List<Product> productsToPredict = productRepository.findByStoreIdAndIsDeletedFalse(storeId);
 
         Map<Long, ProductWeeklySalesResponse> resultMap = new HashMap<>();
 

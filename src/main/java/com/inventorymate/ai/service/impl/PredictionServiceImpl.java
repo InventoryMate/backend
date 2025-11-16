@@ -32,7 +32,7 @@ public class PredictionServiceImpl implements PredictionService {
 
         System.out.println("Store Id: " + storeId);
         System.out.println("Prediction Days : " + predictionDays);
-        List<Product> productsToPredict = productRepository.findByStore_Id(storeId);
+        List<Product> productsToPredict = productRepository.findByStoreIdAndIsDeletedFalse(storeId);
 
         //System.out.println("Lista de productos a predecir obtenida: " + productsToPredict);
 

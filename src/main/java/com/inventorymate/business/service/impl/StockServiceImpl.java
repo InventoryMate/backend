@@ -42,7 +42,7 @@ public class StockServiceImpl implements StockService {
     public List<StockResponse> getAllStocksByProduct(Long productId, Long storeId) {
         List<Stock> stocks = stockRepository.findByProductIdAndStore_IdOrderByPurchaseDateAsc(productId, storeId);
         if (stocks.isEmpty()) {
-            throw new ResourceNotFoundException("No stock found for product with ID: " + productId);
+            return List.of(); // devolver lista vacía, sin lanzar error
         }
         return stocks.stream().map(StockResponse::new).collect(Collectors.toList());
     }

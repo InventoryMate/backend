@@ -35,7 +35,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public List<Product> getAllProducts(Long storeId) {
-        return productRepository.findByStore_Id(storeId);
+        return productRepository.findByStoreIdAndIsDeletedFalse(storeId);
     }
 
     @Override
